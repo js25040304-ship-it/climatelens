@@ -9,6 +9,7 @@
 <style>
 :root{--ink:#173b37;--muted:#5d7069;--paper:#fbfaf5;--line:#d6ddd3;--accent:#c8f169;--warm:#e0832f;--teal:#2e7a68;--serif:"Young Serif",Georgia,"Noto Serif SC",serif;--sans:"Hanken Grotesk",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;--mono:var(--sans)}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow:hidden;font-family:var(--sans);color:var(--ink);background:#e9eee6}
 button{font:inherit;color:inherit;cursor:pointer}
 .sky{position:fixed;inset:0;background:url(img/sky.webp) center/cover;transform:scale(1.06);transition:transform 1.4s cubic-bezier(.2,.7,.2,1),filter 1.2s}
@@ -82,6 +83,8 @@ svg.chart{width:100%;height:auto;max-height:46vh;display:block;touch-action:none
 .metric span{font-size:12px;color:var(--muted)}
 .plain{font-family:var(--serif);font-size:19px;line-height:1.45}
 .limits{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0;padding-left:18px}
+.check{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:600;margin-top:14px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--teal);margin:0}
 .casefile{display:grid;grid-template-columns:.9fr 1.1fr;gap:22px}
 .evid{display:grid;gap:10px}
 .evid div{border:1px dashed #b9c6bc;border-radius:12px;padding:10px 12px;font-size:14px;background:#fff}
@@ -101,7 +104,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  #s2 .wrap,.casefile{grid-template-columns:1fr}
  #s2 .hero{max-width:420px;margin:0 auto}
  .metrics{grid-template-columns:1fr}
- .scene{align-items:flex-start;padding:76px 0 90px;overflow:auto}
+ .scene{align-items:flex-start;padding:76px 0 0;overflow:auto}
+ .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
  .credit{display:none}
  nav.dock button{padding:7px 8px}
  .lbl{font-size:26px}.callout{font-size:24px}svg.chart{max-height:none}
@@ -170,6 +174,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <svg class="chart" id="verSvg" viewBox="0 0 900 380" aria-label="Observations with trend line and slope uncertainty"></svg>
     <div class="metrics" id="metrics"></div>
     <p class="plain" id="plain"></p>
+    <label class="check"><input type="checkbox" id="reviewed"> I have reviewed the evidence above.</label>
     <div class="row"><button class="btn" id="toCase">Write up the case →</button></div>
   </div>
 </section>
@@ -188,6 +193,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
         <textarea id="concl" rows="7" style="font-size:18px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;margin-top:8px" placeholder="The data show… I am uncertain about… This cannot tell us…"></textarea>
         <p class="small" id="closeHint">Write at least one full sentence to close the case.</p>
         <div class="row"><button class="btn" id="close" disabled>Close the case ✓</button><span class="stamp" id="stamp">Case investigated</span></div>
+        <p class="small" id="reviewHint" hidden>Tick ‘I have reviewed the evidence’ on the Verify step for a complete report.</p>
         <div class="row" id="exportRow" hidden><button class="btn" id="pdf">Download PDF report ↓</button><button class="btn ghost" id="copy">Copy report text</button></div>
         <div class="note" id="exportNote" hidden></div>
         <div class="row"><button class="btn ghost" data-go="1">↻ Back to the sky: next island</button></div>
@@ -224,7 +230,7 @@ function isleArt(c,cls){
   return ok?`<img src="${c.img}" alt="" style="--d:${c.d}">`:`<div class="blob" style="--d:${c.d}"></div>`;
 }
 function probe(){CITIES.forEach(c=>{const i=new Image();i.onload=()=>{imgOk[c.img]=true;renderIsles()};i.onerror=()=>{imgOk[c.img]=false};i.src=c.img})}
-const MOB=[[50,64,64],[22,40,26],[78,40,26],[78,86,24],[22,86,24]];
+const MOB=[[50,58,60],[22,40,26],[78,40,26],[78,75,24],[22,75,24]];  // narrow: bottom islands sit above the step dock
 function renderIsles(){
   const m=innerWidth<820;
   $('#isles').innerHTML=CITIES.map((c,i)=>`<button class="isle ${i?'far':''} ${S.done.has(c.name)?'done':''}" style="left:${m?MOB[i][0]:c.x}%;top:${m?MOB[i][1]:c.y}%;width:${m?MOB[i][2]:c.w}vw;min-width:${m?0:(i?110:240)}px" data-city="${i}" aria-label="Open a case for ${c.name}">${isleArt(c)}<span class="tag">${c.name}<small>${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'}</small></span></button>`).join('');
@@ -255,19 +261,22 @@ function pickVar(id){
   $('#q').value=S.v.q(S.city.name);$('#open').disabled=false;
   $('#caseId').textContent=`CASE #${S.city.code}-${id==='ALLSKY_SFC_SW_DWN'?'SUN':id==='PRECTOTCORR'?'RAIN':id}`;
 }
-$('#open').onclick=()=>{S.guess=null;S.found=false;[3,4,5,6].forEach(k=>S.seen.delete(k));setupPredict();go(3)};
+$('#open').onclick=()=>{S.guess=null;S.found=false;$('#reviewed').checked=false;[3,4,5,6].forEach(k=>S.seen.delete(k));setupPredict();go(3)};
+$('#reviewed').onchange=()=>{$('#reviewHint').hidden=$('#reviewed').checked};
 
 function rec(){return CL_DATA[`${S.city.name}|${S.v.id}`]}
-const W=900,H=380,P={l:70,r:24,t:40,b:44};
+const W=900,H=380;let P={l:70,r:24,t:40,b:44};
+const narrow=()=>innerWidth<820;  // narrow labels are drawn at 26px in viewBox units, so they need wider margins
 function scales(r){
+  P=narrow()?{l:100,r:46,t:60,b:70}:{l:70,r:24,t:40,b:44};
   const vals=r.annual.map(a=>a[1]);let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.35||1;lo-=pad;hi+=pad;
   return{lo,hi,x:y=>P.l+(y-2001)/24*(W-P.l-P.r),y:v=>H-P.b-(v-lo)/(hi-lo)*(H-P.t-P.b),inv:py=>lo+(H-P.b-py)/(H-P.t-P.b)*(hi-lo)};
 }
 function fmt(v,u){const a=Math.abs(v);return (a>=100?v.toFixed(0):a>=10?v.toFixed(1):v.toFixed(2)).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
 function axes(r,sc){
   let s='';for(let k=0;k<=4;k++){const v=sc.lo+(sc.hi-sc.lo)*k/4,y=sc.y(v);s+=`<line class="grid" x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}"/><text class="lbl" x="${P.l-10}" y="${y+4}" text-anchor="end">${fmt(v)}</text>`}
-  [2001,2005,2010,2015,2020,2025].forEach(yr=>s+=`<text class="lbl" x="${sc.x(yr)}" y="${H-P.b+22}" text-anchor="middle">${yr}</text>`);
-  s+=`<line class="ax" x1="${P.l}" x2="${W-P.r}" y1="${H-P.b}" y2="${H-P.b}"/><text class="lbl" x="${P.l}" y="14">${S.v.label} (${UNIT[r.unit]||r.unit})</text>`;
+  [2001,2005,2010,2015,2020,2025].forEach(yr=>s+=`<text class="lbl" x="${sc.x(yr)}" y="${H-P.b+(narrow()?40:22)}" text-anchor="middle">${yr}</text>`);
+  s+=`<line class="ax" x1="${P.l}" x2="${W-P.r}" y1="${H-P.b}" y2="${H-P.b}"/><text class="lbl" x="${P.l}" y="${P.t-(narrow()?26:20)}">${S.v.label} (${UNIT[r.unit]||r.unit})</text>`;
   return s;
 }
 function guessPath(sc){if(!S.guess)return'';const pts=Object.entries(S.guess).sort((a,b)=>a[0]-b[0]);return `<path class="guess" d="${pts.map(([yr,v],i)=>(i?'L':'M')+sc.x(+yr)+' '+sc.y(v)).join(' ')}"/>`}
@@ -333,6 +342,7 @@ function caseFile(){
   const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${fmt(s.slope_decade)} ${u}/decade, 95% CI ${fmt(s.ci95_year[0]*10)} to ${fmt(s.ci95_year[1]*10)}`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
   $('#evid').innerHTML=items.map(([k,v])=>`<div><small>${k}</small>${v.replace(/</g,'&lt;')}</div>`).join('');
   $('#stamp').classList.remove('on');$('#exportRow').hidden=true;$('#exportNote').hidden=true;$('#concl').value='';$('#close').disabled=true;
+  $('#reviewHint').hidden=$('#reviewed').checked;  // a reminder only: export stays available and the server decides the report status
 }
 function enough(t){const cjk=(t.match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;const words=t.replace(/[\u3400-\u9fff\uf900-\ufaff]/g,' ').trim().split(/\s+/).filter(Boolean).length;return cjk>=8||words>=6||(cjk>=4&&words>=3)}
 $('#concl').oninput=e=>{const ok=enough(e.target.value);$('#close').disabled=!ok;$('#closeHint').textContent=ok?'Ready. Closing the case unlocks the report.':'Write at least one full sentence to close the case (about 6 words or 8 characters).'};
@@ -343,7 +353,7 @@ $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;
     const inv=await fetch('/api/investigate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});
     if(!inv.ok)throw new Error(inv.status===404?'preview':'api');
     const r=await inv.json(),u=UNIT[r.unit]||r.unit;
-    const body={result_id:r.id,settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:true};
+    const body={result_id:r.id,settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
     const rep=await fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!rep.ok)throw new Error('api');
     const url=URL.createObjectURL(await rep.blob()),a=document.createElement('a');a.href=url;a.download=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
