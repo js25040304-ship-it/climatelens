@@ -103,7 +103,7 @@
 | 提示 *Settings changed* (409) | 改过城市、变量或年份但没重新运行：重新点 investigate | "防止报告和设置对不上。" |
 | PDF 没有弹出下载 | 看浏览器下载栏或下载文件夹；仍没有就打开 `backup-report.pdf` | — |
 | 端口 8000 被占用 | 改用 `--port 8001` 启动，并访问对应地址 | — |
-| 投影上中文显示成方块 | 换用 Edge 或 Chrome 自带的 PDF 查看器打开。STSong-Light 没有嵌入 PDF，中文字体由阅读器提供；本机用 PDFium 渲染时正常，其他阅读器没有逐一测过 | — |
+| 打开 PDF 后中文显示成方块或空白 | 先确认是用当前版本导出的：中文字体（Noto Sans SC）已经嵌入 PDF，不依赖阅读器自带的字体。如果仍有问题，换用 Edge 或 Chrome 打开，或改用 `backup-report.pdf` | — |
 | 有人问"AI 会不会编数字" | 指向 PDF 的 *Verified analysis*：数字由服务器计算；AI 输出标注为 *advisory*，需要人工核对 | "我们不承诺 AI 永不出错，所以它不能改结论、不能阻止导出。" |
 
 ## 演示时不要说的话

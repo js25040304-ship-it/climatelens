@@ -165,12 +165,17 @@ def axis_ticks(low,high,target=5):
  digits=max(0,-math.floor(math.log10(step)+1e-9)); digits+=abs(round(step*10**digits)-step*10**digits)>1e-6
  ticks=[round(k*step,digits)+0. for k in range(math.floor(low/step+1e-9),math.ceil(high/step-1e-9)+1)]
  return ticks,[f'{t:,.{digits}f}' for t in ticks]
+CJK_FONT='NotoSansSC'  # bundled app/fonts/NotoSansSC-Regular.ttf (OFL); embedded as a subset so phone viewers without Chinese fonts still show the text
+def register_cjk_font():
+ from reportlab.pdfbase import pdfmetrics
+ from reportlab.pdfbase.ttfonts import TTFont
+ if CJK_FONT not in pdfmetrics.getRegisteredFontNames(): pdfmetrics.registerFont(TTFont(CJK_FONT,str(ROOT/'fonts'/'NotoSansSC-Regular.ttf')))
 def font_runs(text):
- """Escape student text for a Paragraph: WinAnsi characters stay in Helvetica, everything else (CJK, full-width forms) uses STSong-Light."""
+ """Escape student text for a Paragraph: WinAnsi characters stay in Helvetica, everything else (CJK, full-width forms) uses the embedded CJK font."""
  def latin(ch):
   try: ch.encode('cp1252'); return True
   except UnicodeEncodeError: return False
- return ''.join((lambda t: t if is_latin else '<font name="STSong-Light">'+t+'</font>')(escape(''.join(run)).replace('\n','<br/>')) for is_latin,run in itertools.groupby(str(text),key=lambda ch: ch=='\n' or latin(ch)))
+ return ''.join((lambda t: t if is_latin else '<font name="'+CJK_FONT+'">'+t+'</font>')(escape(''.join(run)).replace('\n','<br/>')) for is_latin,run in itertools.groupby(str(text),key=lambda ch: ch=='\n' or latin(ch)))
 def trend_chart(r,s):
  """Annual observations (and the fitted line when inference exists) with labelled, readable axes."""
  from reportlab.lib import colors
@@ -202,9 +207,7 @@ def report(w:Writing):
  from reportlab.lib import colors
  from reportlab.lib.styles import getSampleStyleSheet
  from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
- from reportlab.pdfbase import pdfmetrics
- from reportlab.pdfbase.cidfonts import UnicodeCIDFont
- pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+ register_cjk_font()
  import reportlab.platypus.paragraph as rlpara  # reportlab's line-start rules are Japanese-centric; add Chinese full-width punctuation (idempotent)
  if isinstance(getattr(rlpara,'ALL_CANNOT_START',None),str): rlpara.ALL_CANNOT_START+=''.join(c for c in '，；：！？、）】」』》〉' if c not in rlpara.ALL_CANNOT_START)
  r=result_for(w); s=r['stats'] if r else None
@@ -212,7 +215,7 @@ def report(w:Writing):
  buffer=io.BytesIO(); styles=getSampleStyleSheet(); styles['Heading2'].keepWithNext=1
  blocks=[]
  cjk=styles['BodyText'].clone('CJKBody',wordWrap='CJK')  # CJK line breaking keeps Chinese punctuation off line starts
- def para(text,style='BodyText'): markup=font_runs(text); blocks.extend([Paragraph(markup,cjk if style=='BodyText' and 'STSong-Light' in markup else styles[style])]+([] if style in ('Title','Heading2') else [Spacer(1,6)]))
+ def para(text,style='BodyText'): markup=font_runs(text); blocks.extend([Paragraph(markup,cjk if style=='BodyText' and CJK_FONT in markup else styles[style])]+([] if style in ('Title','Heading2') else [Spacer(1,6)]))
  settings=w.settings.model_dump(); spec=VARIABLES.get(settings['variable'],{})
  para('ClimateLens | Investigation report','Title'); para(status,'Heading2')
  para('Research question: '+(w.question or 'Not provided')); para(f"City: {settings['city']}  |  Variable: {spec.get('label',settings['variable'])} ({settings['variable']})  |  Period: {settings['start']}–{settings['end']}")

@@ -269,7 +269,27 @@ class ReportTests(unittest.TestCase):
   from app.main import font_runs
   out=font_runs('Rain 降雨，＋１２３mm & <b>')
   self.assertIn('&amp;',out); self.assertIn('&lt;b&gt;',out); self.assertNotIn('<b>',out)
-  self.assertIn('<font name="STSong-Light">降雨，＋１２３</font>',out); self.assertTrue(out.startswith('Rain '))
+  self.assertIn('<font name="NotoSansSC">降雨，＋１２３</font>',out); self.assertTrue(out.startswith('Rain '))
+ def test_chinese_font_is_embedded(self):
+  """Phone viewers without Chinese fonts showed blank text when the non-embedded CID font STSong-Light was used."""
+  settings,result=make_result()
+  for compressed in (False,True):
+   with self.subTest(compressed=compressed):
+    body={'settings':settings,'question':'新加坡气温有变化吗？','conclusion':'在 2001–2025 年间，气温上升，这一分析不能证明原因。全角１２３，标点。','reviewed':True}
+    if compressed:
+     from app.main import RESULTS
+     RESULTS['embed-test']=result
+     try: pdf=self.client.post('/api/report',json={'result_id':'embed-test',**body}).content
+     finally: RESULTS.pop('embed-test')
+    else: pdf=self.pdf(body,result)
+    self.assertTrue(b'/FontFile2' in pdf,b'/FontFile2'); self.assertFalse(b'STSong-Light' in pdf,b'STSong-Light')
+    self.assertFalse(b'/UniGB-UCS2-H' in pdf,b'/UniGB-UCS2-H')
+ def test_bundled_font_and_licence(self):
+  from pathlib import Path
+  fonts=Path(__file__).resolve().parent.parent/'app'/'fonts'
+  data=(fonts/'NotoSansSC-Regular.ttf').read_bytes()
+  self.assertEqual(data[:4],b'\x00\x01\x00\x00'); self.assertIn(b'glyf',data[:400]); self.assertNotIn(b'CFF ',data[:400]); self.assertNotIn(b'fvar',data[:400])
+  self.assertIn('SIL Open Font License',(fonts/'OFL.txt').read_text(encoding='utf-8'))
  def test_chart_axes_and_no_scientific_notation(self):
   settings,result=make_result('PRECTOTCORR',[{'year':2001+i,'value':2300+12*i+(80 if i%3==0 else -45)} for i in range(25)],'mm/year')
   pdf=self.pdf({'settings':settings,'conclusion':'Rainfall rose.','reviewed':True},result)
