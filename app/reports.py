@@ -77,7 +77,12 @@ def report(w:Writing):
  def para(text,style='BodyText'): markup=font_runs(text); blocks.extend([Paragraph(markup,cjk if style=='BodyText' and CJK_FONT in markup else styles[style])]+([] if style in ('Title','Heading2') else [Spacer(1,6)]))
  settings=w.settings.model_dump(); spec=VARIABLES.get(settings['variable'],{})
  para('ClimateLens | Investigation report','Title'); para(status,'Heading2')
- para('Research question: '+(w.question or 'Not provided')); para(f"City: {settings['city']}  |  Variable: {spec.get('label',settings['variable'])} ({settings['variable']})  |  Period: {settings['start']}–{settings['end']}")
+ para('Research question (student): '+(w.question or 'Not provided')); para(f"City: {settings['city']}  |  Variable: {spec.get('label',settings['variable'])} ({settings['variable']})  |  Period: {settings['start']}–{settings['end']}")
+ if w.question.strip():
+  from .questions import parse_question
+  proposed = parse_question(w.question)['proposed']
+  if any(value is not None and value != settings[key] for key,value in proposed.items()):
+   para('Scope note: the student question and selected settings differ. The verified analysis applies only to the city, variable and period shown above.')
  para('Initial hypothesis (student): '+(w.hypothesis or 'Skipped'))
  para('Observation notes (student): '+(w.observation or 'Not recorded'))
  if r and r['annual']: blocks.append(trend_chart(r,s))

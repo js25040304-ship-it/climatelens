@@ -48,6 +48,7 @@ if (document.body.dataset.mode === 'snapshot') {
       add('h1','ClimateLens — saved NASA investigation');
       add('p','Archive preview. Saved real NASA data captured 14 Nov 2026. No live NASA or AI request was made. This is a browser printout, not the server-generated report.');
       add('h2','Scope'); add('p',`${writing.settings.city} · ${writing.settings.variable} · ${writing.settings.start}–${writing.settings.end}`);
+      add('p','The evidence applies to the scope above. Review whether the student question matches it.');
       ['question','hypothesis','observation','conclusion'].forEach(key=>{add('h2',key[0].toUpperCase()+key.slice(1));add('p',writing[key]||'(Not written)');});
       add('p',`Status: ${record?.stats&&writing.reviewed&&writing.conclusion.trim()?'Evidence reviewed and conclusion written.':'Incomplete investigation.'}`);
       if(record) {

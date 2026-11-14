@@ -122,7 +122,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <div class="intro">
     <div class="eyebrow">Be an Earth system trend detective</div>
     <h1>Every island<br>is a <em>case</em>.</h1>
-    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Twenty-five years of NASA POWER observations. Pick an island to open an investigation.</p>
+    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER observations from 2001–2025. Pick an island to open an investigation.</p>
     <div class="hint">Click an island to begin</div>
   </div>
   <div id="isles" style="position:absolute;inset:0;z-index:2"></div>
@@ -138,6 +138,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
       <p class="small">Tap a tag on the island. Your question is written for you. Edit it if you like.</p>
       <textarea id="q" rows="2" aria-label="Research question"></textarea>
       <div class="row"><button class="btn" id="open" disabled>Open the case ↗</button><button class="btn ghost" data-go="1">← Back to the sky</button></div>
+      <p class="small" id="loadNote" role="status" aria-live="polite"></p>
       <p class="small" style="margin-top:14px">The island is an illustration. NASA POWER data describe one grid cell near the city's coordinates, not a city-wide average.</p>
     </div>
   </div>
@@ -207,7 +208,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 </nav>
 <div class="credit">Illustrations are AI-generated concept art. Charts use NASA POWER monthly data (RE community), 2001–2025.</div>
 
-<script src="data.js"></script>
+<script src="/static/ui-utils.js"></script>
 <script>
 const CITIES=[
  {name:'Singapore',code:'SG',lat:1.3521,lon:103.8198,img:'img/singapore.webp',x:50,y:68,w:30,d:'0s'},
@@ -222,7 +223,7 @@ const VARS=[
  {id:'WS10M',label:'Wind speed',tag:'Wind',q:c=>`Are winds around ${c} changing between 2001 and 2025?`,hi:'windiest',x:-4,y:58},
  {id:'ALLSKY_SFC_SW_DWN',label:'Surface solar radiation',tag:'Sunlight',q:c=>`Is ${c} receiving more or less sunlight at the surface since 2001?`,hi:'sunniest',x:60,y:86}];
 const UNIT={C:'°C','mm/year':'mm/yr','%':'%','m/s':'m/s','kW-hr/m^2/day':'kWh/m²/day'};
-const S={city:null,v:null,guess:null,seen:new Set([1]),done:new Set(),found:false};
+const S={city:null,v:null,guess:null,evidence:null,request:null,seen:new Set([1]),done:new Set(),found:false,closed:false};
 const $=s=>document.querySelector(s);
 const imgOk={};
 function isleArt(c,cls){
@@ -237,7 +238,11 @@ function renderIsles(){
   document.querySelectorAll('.isle').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));
 }
 function go(n){
-  if(n>1 && !S.city) return;
+  if((n>1 && !S.city) || (n>2 && !S.evidence)) return;
+  if(n===1 && S.request){
+    S.request.abort(); S.request=null;
+    $('#open').disabled=!S.v; $('#loadNote').textContent='';
+  }
   document.querySelectorAll('.scene').forEach((s,i)=>s.classList.toggle('on',i+1===n));
   document.body.dataset.scene=n; S.seen.add(n);
   document.querySelectorAll('.dock button').forEach(b=>{const k=+b.dataset.step;b.classList.toggle('cur',k===n);b.classList.toggle('seen',S.seen.has(k));b.disabled=!S.seen.has(k)});
@@ -246,7 +251,12 @@ function go(n){
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(+b.dataset.go));
 document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>go(+b.dataset.step));
 
+function resetCase(){
+  S.request?.abort(); S.request=null; S.evidence=null; S.guess=null; S.found=false; S.closed=false;
+  S.seen=new Set([1,2]); $('#concl').value=''; $('#reviewed').checked=false; $('#loadNote').textContent='';
+}
 function pickCity(i){
+  resetCase();
   S.city=CITIES[i];S.v=null;S.guess=null;S.found=false;S.seen=new Set([1,2]);
   const c=S.city;
   $('#cityLine').textContent=`${c.name} · ${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'} ${c.lon.toFixed(2)}°E`;
@@ -256,20 +266,47 @@ function pickCity(i){
   go(2);
 }
 function pickVar(id){
+  if(S.v?.id===id)return;
+  resetCase();go(2);
   S.v=VARS.find(v=>v.id===id);
   document.querySelectorAll('.vtag').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
   $('#q').value=S.v.q(S.city.name);$('#open').disabled=false;
   $('#caseId').textContent=`CASE #${S.city.code}-${id==='ALLSKY_SFC_SW_DWN'?'SUN':id==='PRECTOTCORR'?'RAIN':id}`;
 }
-$('#open').onclick=()=>{S.guess=null;S.found=false;$('#reviewed').checked=false;[3,4,5,6].forEach(k=>S.seen.delete(k));setupPredict();go(3)};
+const settingsForCase=()=>({city:S.city.name,variable:S.v.id,start:2001,end:2025});
+async function api(path, body, signal){
+  const response=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
+  if(!response.ok){
+    const error=await response.json().catch(()=>({}));
+    throw new Error(typeof error.detail==='string'?error.detail:'The server could not complete this request.');
+  }
+  return response;
+}
+$('#open').onclick=async()=>{
+  if(!S.v)return;
+  S.request?.abort();
+  const request=new AbortController();S.request=request;
+  const button=$('#open'),note=$('#loadNote'),settings=settingsForCase();
+  button.disabled=true;note.textContent='Loading and validating NASA POWER observations…';
+  try{
+    const r=await (await api('investigate',settings,request.signal)).json();
+    if(S.request!==request)return;
+    if(!r.annual.length)throw new Error('NASA returned no complete annual observations for this case.');
+    resetCase();
+    S.evidence={...r,annual:r.annual.map(({year,value})=>[year,value]),retrieved:r.retrieved_at,src:r.source_url};
+    setupPredict();go(3);button.disabled=false;
+  }catch(e){
+    if(S.request===request){note.textContent=e.message;button.disabled=false;S.request=null;}
+  }
+};
 $('#reviewed').onchange=()=>{$('#reviewHint').hidden=$('#reviewed').checked};
 
-function rec(){return CL_DATA[`${S.city.name}|${S.v.id}`]}
+function rec(){return S.evidence}
 const W=900,H=380;let P={l:70,r:24,t:40,b:44};
 const narrow=()=>innerWidth<820;  // narrow labels are drawn at 26px in viewBox units, so they need wider margins
-function scales(r){
+function scales(r,additional=[]){
   P=narrow()?{l:100,r:46,t:60,b:70}:{l:70,r:24,t:40,b:44};
-  const vals=r.annual.map(a=>a[1]);let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.35||1;lo-=pad;hi+=pad;
+  const vals=[...r.annual.map(a=>a[1]),...additional];let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.35||1;lo-=pad;hi+=pad;
   return{lo,hi,x:y=>P.l+(y-2001)/24*(W-P.l-P.r),y:v=>H-P.b-(v-lo)/(hi-lo)*(H-P.t-P.b),inv:py=>lo+(H-P.b-py)/(H-P.t-P.b)*(hi-lo)};
 }
 function fmt(v,u){const a=Math.abs(v);return (a>=100?v.toFixed(0):a>=10?v.toFixed(1):v.toFixed(2)).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
@@ -300,7 +337,7 @@ let rainTimer=[];
 function observe(){
   rainTimer.forEach(clearTimeout);rainTimer=[];
   const r=rec(),sc=scales(r),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
-  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · NASA POWER, ${r.annual.length} complete years. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · NASA POWER, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
   svg.innerHTML=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="6" cx="${sc.x(yr)}" cy="${sc.y(v)}" data-yr="${yr}" data-v="${v}" style="transform:translateY(-${sc.y(v)+40}px);opacity:0"/>`).join('')+`<g id="hl"></g>`;
   const pts=[...svg.querySelectorAll('.pt')];
   pts.forEach((p,i)=>rainTimer.push(setTimeout(()=>{p.style.transform='translateY(0)';p.style.opacity=1},120+i*70)));
@@ -314,24 +351,33 @@ function observe(){
     if(hit)S.found=yr;
   });
 }
+function evidenceNumber(stats,value){
+  const largest=Math.max(Math.abs(stats.slope_decade),...stats.ci95_year.map(v=>Math.abs(v*10)));
+  const digits=largest?Math.max(0,2-Math.floor(Math.log10(largest))):0;
+  return (value+0).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
 function verify(){
-  const r=rec(),sc=scales(r),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  const first=r.annual[0][0],last=r.annual.at(-1)[0];
+  const xm=r.annual.reduce((a,b)=>a+b[0],0)/r.annual.length,ym=r.annual.reduce((a,b)=>a+b[1],0)/r.annual.length;
+  const L=(m,yr)=>ym+m*(yr-xm);
+  const edges=s?s.ci95_year.flatMap(m=>[L(m,first),L(m,last)]):[];
+  const sc=scales(r,s?[...edges,...s.fitted]:[]);
   let body=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="5" cx="${sc.x(yr)}" cy="${sc.y(v)}"/>`).join('');
   if(s){
-    const xm=r.annual.reduce((a,b)=>a+b[0],0)/r.annual.length,ym=r.annual.reduce((a,b)=>a+b[1],0)/r.annual.length,[lo,hi]=s.ci95_year;
-    const L=(m,yr)=>ym+m*(yr-xm);
-    body+=`<path class="fan" d="M${sc.x(2001)} ${sc.y(L(hi,2001))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(2025)} ${sc.y(L(hi,2025))} L${sc.x(2025)} ${sc.y(L(lo,2025))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(2001)} ${sc.y(L(lo,2001))}Z" style="opacity:0;transition:opacity 1s .9s" id="fan"/>`;
-    const d=`M${sc.x(2001)} ${sc.y(s.fitted[0])} L${sc.x(2025)} ${sc.y(s.fitted[s.fitted.length-1])}`;
+    const [lo,hi]=s.ci95_year;
+    body+=`<path class="fan" d="M${sc.x(first)} ${sc.y(L(hi,first))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(last)} ${sc.y(L(hi,last))} L${sc.x(last)} ${sc.y(L(lo,last))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(first)} ${sc.y(L(lo,first))}Z" style="opacity:0;transition:opacity 1s .9s" id="fan"/>`;
+    const d=`M${sc.x(first)} ${sc.y(s.fitted[0])} L${sc.x(last)} ${sc.y(s.fitted[s.fitted.length-1])}`;
     body+=`<path class="trend" id="tl" d="${d}" stroke-dasharray="2000" stroke-dashoffset="2000" style="transition:stroke-dashoffset 1.2s ease"/>`;
     body+=`<text class="callout" x="${W-P.r}" y="${P.t+8}" text-anchor="end">— fitted trend · shaded: plausible slopes (95% CI)</text>`;
   }
   svg.innerHTML=body;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
   if(!s){$('#metrics').innerHTML='';$('#plain').textContent='No valid trend inference is available for this record. Record the data limitation; do not infer a trend from missing evidence.';return}
-  const [lo,hi]=s.ci95_year.map(x=>x*10),p=s.p_value<.001?'< 0.001':s.p_value.toFixed(3);
-  $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${fmt(s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${fmt(lo)} to ${fmt(hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
+  const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
+  $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
   const dir=s.direction==='increasing'?'rises':s.direction==='decreasing'?'falls':'changes';
-  let txt=`Over ${s.n} years, the fitted line ${dir} by about ${fmt(Math.abs(s.slope_decade))} ${u} per decade. `;
+  let txt=`Over ${s.n} years, the fitted line ${dir} by about ${evidenceNumber(s,Math.abs(s.slope_decade))} ${u} per decade. `;
   txt+=s.significant?`The interval excludes zero, so this is evidence of a ${s.direction==='increasing'?'rise':'decline'} at the 0.05 level. `:`The interval includes zero, so the data cannot distinguish this slope from no linear change. That is not proof of no change. `;
   txt+=`It describes a pattern in observational data; it cannot tell us what caused it.`;
   if(S.guess){const gs=(S.guess[2025]-S.guess[2001])/24*10;const same=Math.sign(gs)===Math.sign(s.slope_decade)&&Math.abs(gs)>1e-9;txt+=` Your guess ${gs>0?'rose':'fell'} about ${fmt(Math.abs(gs))} ${u} per decade${same?', the same direction as the data.':', a different direction from the data. Interesting: what made you expect that?'}`}
@@ -339,29 +385,27 @@ function verify(){
 }
 function caseFile(){
   const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;
-  const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${fmt(s.slope_decade)} ${u}/decade, 95% CI ${fmt(s.ci95_year[0]*10)} to ${fmt(s.ci95_year[1]*10)}`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
+  const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}/decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
   $('#evid').innerHTML=items.map(([k,v])=>`<div><small>${k}</small>${v.replace(/</g,'&lt;')}</div>`).join('');
-  $('#stamp').classList.remove('on');$('#exportRow').hidden=true;$('#exportNote').hidden=true;$('#concl').value='';$('#close').disabled=true;
+  $('#stamp').classList.toggle('on',S.closed);$('#exportRow').hidden=!S.closed;$('#exportNote').hidden=true;$('#close').disabled=S.closed||!enough($('#concl').value);
   $('#reviewHint').hidden=$('#reviewed').checked;  // a reminder only: export stays available and the server decides the report status
 }
 function enough(t){const cjk=(t.match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;const words=t.replace(/[\u3400-\u9fff\uf900-\ufaff]/g,' ').trim().split(/\s+/).filter(Boolean).length;return cjk>=8||words>=6||(cjk>=4&&words>=3)}
-$('#concl').oninput=e=>{const ok=enough(e.target.value);$('#close').disabled=!ok;$('#closeHint').textContent=ok?'Ready. Closing the case unlocks the report.':'Write at least one full sentence to close the case (about 6 words or 8 characters).'};
-function reportText(){const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;return [`ClimateLens case report: ${S.city.name} / ${S.v.label}`,`Question: ${$('#q').value}`,`Prediction: ${S.guess?fmt((S.guess[2025]-S.guess[2001])/2.4)+' '+u+' per decade (drawn)':'Skipped'}`,s?`Evidence: ${fmt(s.slope_decade)} ${u} per decade, 95% CI ${fmt(s.ci95_year[0]*10)} to ${fmt(s.ci95_year[1]*10)}, p ${s.p_value<.001?'< 0.001':'= '+s.p_value.toFixed(3)} (n=${s.n})`:'Evidence: no valid trend inference',`Limits: one NASA POWER grid cell, not a city average; a trend is not a cause or a forecast.`,`Student conclusion: ${$('#concl').value.trim()}`,`Source: ${r.src}`].join('\n')}
+$('#concl').oninput=e=>{S.closed=false;$('#stamp').classList.remove('on');$('#exportRow').hidden=true;const ok=enough(e.target.value);$('#close').disabled=!ok;$('#closeHint').textContent=ok?'Ready. Closing the case unlocks the report.':'Write at least one full sentence to close the case (about 6 words or 8 characters).'};
+function reportText(){const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;return [`ClimateLens case report: ${S.city.name} / ${S.v.label}`,`Question: ${$('#q').value}`,`Prediction: ${S.guess?fmt((S.guess[2025]-S.guess[2001])/2.4)+' '+u+' per decade (drawn)':'Skipped'}`,s?`Evidence: ${evidenceNumber(s,s.slope_decade)} ${u} per decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}, p ${s.p_value<.001?'< 0.001':'= '+ClimateUI.pValue(s.p_value)} (n=${s.n})`:'Evidence: no valid trend inference',`Limits: one NASA POWER grid cell, not a city average; a trend is not a cause or a forecast.`,`Student conclusion: ${$('#concl').value.trim()}`,`Source: ${r.src}`].join('\n')}
 $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;n.textContent='Preparing your PDF report…';b.disabled=true;
   try{
-    const settings={city:S.city.name,variable:S.v.id,start:2001,end:2025};
-    const inv=await fetch('/api/investigate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});
-    if(!inv.ok)throw new Error(inv.status===404?'preview':'api');
-    const r=await inv.json(),u=UNIT[r.unit]||r.unit;
-    const body={result_id:r.id,settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
-    const rep=await fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!rep.ok)throw new Error('api');
-    const url=URL.createObjectURL(await rep.blob()),a=document.createElement('a');a.href=url;a.download=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+    const r=rec(),u=UNIT[r.unit]||r.unit,fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
+    const body={result_id:r.id,settings:r.settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
+    const rep=await api('report',body);
+    if(rec()!==r)return;
+    if(!rep.headers.get('content-type')?.includes('application/pdf'))throw new Error('The server did not return a PDF.');
+    const url=URL.createObjectURL(await rep.blob()),a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
     n.textContent='Your PDF report is downloading.';
-  }catch(e){n.textContent=e.message==='api'?'The report service did not respond. Check your connection and try again, or use “Copy report text”.':'This preview cannot download files. In the ClimateLens app, this button saves a PDF case report with the chart, statistics, data table, your conclusion and the NASA source link. For now, use “Copy report text”.'}
+  }catch(e){n.textContent=e.message+' Reopen the case if its evidence expired, or use “Copy report text”.'}
   finally{b.disabled=false}};
 $('#copy').onclick=async()=>{const n=$('#exportNote');n.hidden=false;try{await navigator.clipboard.writeText(reportText());n.textContent='Report copied. Paste it into a document or message.'}catch(e){n.textContent='Copy was blocked by this browser. Select your conclusion and copy it manually.'}};
-$('#close').onclick=()=>{$('#stamp').classList.add('on');S.done.add(S.city.name);$('#exportRow').hidden=false;$('#close').disabled=true;$('#closeHint').textContent='Case closed. Download your report, or go back to the sky for the next island.'};
+$('#close').onclick=()=>{S.closed=true;$('#stamp').classList.add('on');S.done.add(S.city.name);$('#exportRow').hidden=false;$('#close').disabled=true;$('#closeHint').textContent='Case closed. Download your report, or go back to the sky for the next island.'};
 $('#toVerify').onclick=()=>go(5);$('#toCase').onclick=()=>go(6);
 probe();renderIsles();
 </script>

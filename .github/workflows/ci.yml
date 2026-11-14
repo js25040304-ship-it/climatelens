@@ -32,7 +32,7 @@ jobs:
           python scripts/smoke.py
   live-nasa:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,3 +45,30 @@ jobs:
         env:
           RUN_LIVE_NASA: '1'
           LLM_API_KEY: ''
+      - name: Exercise all 25 live NASA investigations
+        run: python scripts/verify_nasa_data.py --live --output "${{ runner.temp }}/climatelens-live-evidence"
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'fix/scientific-qa')
+      - name: Verify live mobile-width browser flow
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'fix/scientific-qa')
+        env:
+          LLM_API_KEY: ''
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/climatelens-browser.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          python scripts/smoke.py
+          python scripts/verify_browser.py
+      - name: Verify detective cases and downloaded PDF evidence
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.event_name == 'push'
+        env:
+          LLM_API_KEY: ''
+        run: |
+          python -m pip install playwright pypdf
+          python -m playwright install --with-deps chromium
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/climatelens-detective.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          python scripts/smoke.py
+          python scripts/verify_detective.py
