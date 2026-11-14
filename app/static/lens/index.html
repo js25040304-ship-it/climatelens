@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClimateLens — Trend Detective prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#173b37;--muted:#5d7069;--paper:#fbfaf5;--line:#d6ddd3;--accent:#c8f169;--warm:#e0832f;--teal:#2e7a68;--serif:"Young Serif",Georgia,"Noto Serif SC",serif;--sans:"Hanken Grotesk",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;--mono:var(--sans)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;font-family:var(--sans);color:var(--ink);background:#e9eee6}
+button{font:inherit;color:inherit;cursor:pointer}
+.sky{position:fixed;inset:0;background:url(img/sky.webp) center/cover;transform:scale(1.06);transition:transform 1.4s cubic-bezier(.2,.7,.2,1),filter 1.2s}
+body[data-scene="2"] .sky{transform:scale(1.18)}
+body[data-scene="3"] .sky,body[data-scene="4"] .sky,body[data-scene="5"] .sky,body[data-scene="6"] .sky{transform:scale(1.25);filter:blur(6px) saturate(.8)}
+.mist{position:fixed;inset:0;background:linear-gradient(180deg,rgba(238,241,234,0) 55%,rgba(238,241,234,.85));pointer-events:none}
+header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:18px 28px;z-index:20}
+.brand{font-weight:700;letter-spacing:-.3px;font-size:19px;display:flex;gap:8px;align-items:center}
+.brand i{width:14px;height:14px;border-radius:50%;border:3px solid var(--ink);display:inline-block}
+.case{font-size:13px;font-weight:600;background:rgba(251,250,245,.75);border:1px solid var(--line);padding:7px 11px;border-radius:999px;opacity:0;transition:opacity .4s}
+body:not([data-scene="1"]) .case{opacity:1}
+.scene{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .55s ease}
+.scene.on{opacity:1;pointer-events:auto}
+.eyebrow{font-size:14px;font-weight:600;color:var(--teal)}
+h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.5px;margin:.2em 0;text-wrap:balance}
+h1 em,h2 em{font-style:normal;color:inherit}
+h1{font-size:clamp(34px,5.4vw,72px);line-height:1.02}
+h2{font-size:clamp(26px,3.4vw,44px);line-height:1.08}
+.lede{color:var(--muted);line-height:1.6;max-width:46ch}
+/* scene 1 */
+#s1 .intro{position:absolute;top:9vh;left:0;right:0;text-align:center;padding:0 20px;z-index:3;pointer-events:none}
+.isle{position:absolute;border:0;background:none;padding:0;transform:translate(-50%,-50%);transition:transform .35s,filter .35s}
+.isle img,.isle .blob{display:block;width:100%;animation:bob 6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.isle:hover{transform:translate(-50%,-52%) scale(1.04)}
+.isle:focus-visible{outline:3px solid var(--accent);outline-offset:6px;border-radius:20px}
+.isle .tag{position:absolute;z-index:2;left:50%;bottom:-6px;transform:translateX(-50%);white-space:nowrap;font-size:13px;font-weight:600;background:var(--accent);color:#1d3a0e;padding:6px 10px;border-radius:999px}
+.isle .tag small{opacity:.7;margin-left:6px}
+.isle.far{filter:blur(.6px) saturate(.9);opacity:.92}
+.isle.done .tag::after{content:" ✓ case opened";}
+.blob{aspect-ratio:1.15;background:radial-gradient(60% 34% at 50% 30%,#7aa65a 0 60%,transparent 62%),radial-gradient(48% 48% at 50% 52%,#8a8a78 0 55%,transparent 57%);filter:drop-shadow(0 10px 14px rgba(23,59,55,.18))}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.hint{font-size:14px;font-weight:600;color:var(--teal);margin-top:10px}
+.clouds{position:fixed;left:-10%;right:-10%;bottom:-6vh;height:34vh;background:url(img/cloud.webp) center bottom/100% auto no-repeat;pointer-events:none;z-index:1;opacity:.95;transition:opacity .8s,transform 1.2s;animation:drift 40s ease-in-out infinite alternate;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 40%,#000 75%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 40%,#000 75%,transparent)}
+.clouds.back{bottom:auto;top:44vh;height:22vh;opacity:.55;z-index:0;animation-duration:55s;animation-direction:alternate-reverse}
+body:not([data-scene="1"]) .clouds{opacity:0;transform:translateY(8vh)}
+@keyframes drift{from{translate:-3% 0}to{translate:3% 0}}
+.note{font-size:14px;line-height:1.5;background:#eef4e6;border:1px solid #cfe0bf;border-radius:12px;padding:10px 12px;margin-top:12px}
+/* scene 2 */
+#s2 .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:3vw;align-items:center;width:min(1180px,92vw)}
+#s2 .hero{position:relative}
+#s2 .hero img{width:100%;animation:bob 7s ease-in-out infinite}
+.vtag{position:absolute;max-width:max-content;left:clamp(0px,var(--x),calc(100% - 110px))!important;font-size:14px;font-weight:600;border:1px solid rgba(23,59,55,.25);background:rgba(251,250,245,.85);padding:8px 12px;border-radius:999px;transition:.25s;animation:bob 5s ease-in-out infinite;animation-delay:var(--d)}
+.vtag:hover{background:#fff}
+.vtag[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1d3a0e}
+.panel{background:rgba(251,250,245,.9);border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 20px 50px rgba(23,59,55,.1)}
+textarea{width:100%;font:inherit;font-family:var(--serif);font-size:20px;line-height:1.4;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);resize:none;padding:6px 0;outline:none}
+textarea:focus{border-color:var(--teal)}
+.btn{border:0;background:var(--ink);color:#fff;border-radius:999px;padding:13px 20px;font-weight:600;display:inline-flex;gap:8px;align-items:center}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.small{font-size:13px;color:var(--muted);line-height:1.5}
+/* chart scenes */
+.stage{width:min(1100px,94vw)}
+.card{background:rgba(251,250,245,.94);border:1px solid var(--line);border-radius:22px;padding:22px 24px;box-shadow:0 20px 50px rgba(23,59,55,.1)}
+.card header{position:static;padding:0 0 6px}
+svg.chart{width:100%;height:auto;max-height:46vh;display:block;touch-action:none;user-select:none}
+.ax{stroke:#9fb0a6;stroke-width:1}
+.grid{stroke:#e3e8e0}
+.lbl{font-size:13px;fill:#6b7d75;font-family:var(--sans);font-variant-numeric:tabular-nums}
+.pt{fill:var(--teal);transition:transform .6s cubic-bezier(.3,1.4,.5,1),opacity .3s;cursor:pointer}
+.pt:hover{fill:#174e42}
+.guess{fill:none;stroke:var(--warm);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 6}
+.trend{stroke:#174e42;stroke-width:3;fill:none}
+.fan{fill:rgba(224,131,47,.16);stroke:none}
+.callout{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink)}
+.toast{min-height:24px;font-size:14px;color:var(--ink);margin-top:10px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.metric{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+.metric b{display:block;font-family:var(--serif);font-weight:400;font-size:26px}
+.metric span{font-size:12px;color:var(--muted)}
+.plain{font-family:var(--serif);font-size:19px;line-height:1.45}
+.limits{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0;padding-left:18px}
+.check{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:600;margin-top:14px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--teal);margin:0}
+.casefile{display:grid;grid-template-columns:.9fr 1.1fr;gap:22px}
+.evid{display:grid;gap:10px}
+.evid div{border:1px dashed #b9c6bc;border-radius:12px;padding:10px 12px;font-size:14px;background:#fff}
+.evid small{display:block;font-size:12px;font-weight:700;color:var(--teal);margin-bottom:2px}
+.stamp{font-weight:700;letter-spacing:2px;font-size:13px;color:#9b4a17;border:2px solid #9b4a17;padding:6px 10px;border-radius:8px;display:inline-block;transform:rotate(-4deg);opacity:0;transition:opacity .4s}
+.stamp.on{opacity:.85}
+/* dock */
+nav.dock{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:6px;background:rgba(251,250,245,.85);border:1px solid var(--line);border-radius:999px;padding:6px;z-index:30}
+nav.dock button{border:0;background:transparent;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+nav.dock button.cur{background:var(--ink);color:#fff}
+nav.dock button.seen:not(.cur){color:var(--ink)}
+nav.dock button:disabled{opacity:.35;cursor:not-allowed}
+.credit{position:fixed;right:14px;bottom:22px;font-size:11px;color:var(--muted);max-width:240px;text-align:right;z-index:5}
+@media (max-width:820px){
+.isle .tag{font-size:9px;padding:4px 7px}.isle .tag small{display:none}
+ #s1 .intro{top:11vh}
+ #s2 .wrap,.casefile{grid-template-columns:1fr}
+ #s2 .hero{max-width:420px;margin:0 auto}
+ .metrics{grid-template-columns:1fr}
+ .scene{align-items:flex-start;padding:76px 0 0;overflow:auto}
+ .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
+ .credit{display:none}
+ nav.dock button{padding:7px 8px}
+ .lbl{font-size:26px}.callout{font-size:24px}svg.chart{max-height:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body data-scene="1">
+<div class="sky"></div><div class="mist"></div><div class="clouds back"></div><div class="clouds"></div>
+<header><div class="brand"><i></i>ClimateLens</div><div class="case" id="caseId">CASE #—</div></header>
+
+<!-- 1 SKY -->
+<section class="scene on" id="s1" aria-label="Choose an island">
+  <div class="intro">
+    <div class="eyebrow">Be an Earth system trend detective</div>
+    <h1>Every island<br>is a <em>case</em>.</h1>
+    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER observations from 2001–2025. Pick an island to open an investigation.</p>
+    <div class="hint">Click an island to begin</div>
+  </div>
+  <div id="isles" style="position:absolute;inset:0;z-index:2"></div>
+</section>
+
+<!-- 2 ISLAND -->
+<section class="scene" id="s2" aria-label="Choose what to investigate">
+  <div class="wrap">
+    <div class="hero" id="heroIsle"></div>
+    <div class="panel">
+      <div class="eyebrow" id="cityLine">Singapore · 1.35°N 103.82°E</div>
+      <h2>What do you want<br>to <em>investigate</em>?</h2>
+      <p class="small">Tap a tag on the island. Your question is written for you. Edit it if you like.</p>
+      <textarea id="q" rows="2" aria-label="Research question"></textarea>
+      <div class="row"><button class="btn" id="open" disabled>Open the case ↗</button><button class="btn ghost" data-go="1">← Back to the sky</button></div>
+      <p class="small" id="loadNote" role="status" aria-live="polite"></p>
+      <p class="small" style="margin-top:14px">The island is an illustration. NASA POWER data describe one grid cell near the city's coordinates, not a city-wide average.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 PREDICT -->
+<section class="scene" id="s3" aria-label="Predict">
+  <div class="stage card">
+    <div class="eyebrow">03 / Predict</div>
+    <h2>Before you look, <em>draw your guess</em>.</h2>
+    <p class="small">Drag across the chart from left to right. There is no wrong guess; it's what makes the evidence interesting.</p>
+    <svg class="chart" id="predictSvg" viewBox="0 0 900 380" aria-label="Empty chart for drawing a prediction"></svg>
+    <div class="row"><button class="btn" id="lock" disabled>Lock in my prediction →</button><button class="btn ghost" id="skipPredict">Skip, just show me</button><button class="btn ghost" id="redraw">Redraw</button></div>
+  </div>
+</section>
+
+<!-- 4 OBSERVE -->
+<section class="scene" id="s4" aria-label="Observe">
+  <div class="stage card">
+    <div class="eyebrow">04 / Observe</div>
+    <h2 id="obsTitle">Let the pattern <em>unfold</em>.</h2>
+    <p class="small" id="obsSub"></p>
+    <svg class="chart" id="obsSvg" viewBox="0 0 900 380" aria-label="Annual observations"></svg>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="row"><button class="btn" id="toVerify" disabled>How strong is the evidence? →</button></div>
+  </div>
+</section>
+
+<!-- 5 VERIFY -->
+<section class="scene" id="s5" aria-label="Verify">
+  <div class="stage card">
+    <div class="eyebrow">05 / Verify</div>
+    <h2>A pattern. But <em>how strong</em>?</h2>
+    <svg class="chart" id="verSvg" viewBox="0 0 900 380" aria-label="Observations with trend line and slope uncertainty"></svg>
+    <div class="metrics" id="metrics"></div>
+    <p class="plain" id="plain"></p>
+    <label class="check"><input type="checkbox" id="reviewed"> I have reviewed the evidence above.</label>
+    <div class="row"><button class="btn" id="toCase">Write up the case →</button></div>
+  </div>
+</section>
+
+<!-- 6 CASE -->
+<section class="scene" id="s6" aria-label="Case report">
+  <div class="stage card">
+    <div class="eyebrow">06 / Case report</div>
+    <div class="casefile">
+      <div>
+        <h2>Your evidence.<br><em>Your words.</em></h2>
+        <div class="evid" id="evid"></div>
+      </div>
+      <div>
+        <label class="small" for="concl">What can you reasonably conclude, and what remains uncertain?</label>
+        <textarea id="concl" rows="7" style="font-size:18px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;margin-top:8px" placeholder="The data show… I am uncertain about… This cannot tell us…"></textarea>
+        <p class="small" id="closeHint">Write at least one full sentence to close the case.</p>
+        <div class="row"><button class="btn" id="close" disabled>Close the case ✓</button><span class="stamp" id="stamp">Case investigated</span></div>
+        <p class="small" id="reviewHint" hidden>Tick ‘I have reviewed the evidence’ on the Verify step for a complete report.</p>
+        <div class="row" id="exportRow" hidden><button class="btn" id="pdf">Download PDF report ↓</button><button class="btn ghost" id="copy">Copy report text</button></div>
+        <div class="note" id="exportNote" hidden></div>
+        <div class="row"><button class="btn ghost" data-go="1">↻ Back to the sky: next island</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<nav class="dock" aria-label="Investigation steps">
+  <button data-step="1">01 Sky</button><button data-step="2" disabled>02 Island</button><button data-step="3" disabled>03 Predict</button><button data-step="4" disabled>04 Observe</button><button data-step="5" disabled>05 Verify</button><button data-step="6" disabled>06 Case</button>
+</nav>
+<div class="credit">Illustrations are AI-generated concept art. Charts use NASA POWER monthly data (RE community), 2001–2025.</div>
+
+<script src="/static/ui-utils.js"></script>
+<script>
+const CITIES=[
+ {name:'Singapore',code:'SG',lat:1.3521,lon:103.8198,img:'img/singapore.webp',x:50,y:68,w:30,d:'0s'},
+ {name:'Kuala Lumpur',code:'KL',lat:3.139,lon:101.6869,img:'img/kuala-lumpur.webp',x:16,y:44,w:14,d:'-1.5s'},
+ {name:'Bangkok',code:'BKK',lat:13.7563,lon:100.5018,img:'img/bangkok.webp',x:83,y:40,w:14,d:'-3s'},
+ {name:'Ho Chi Minh City',code:'HCMC',lat:10.8231,lon:106.6297,img:'img/ho-chi-minh-city.webp',x:82,y:78,w:12,d:'-2s'},
+ {name:'Jakarta',code:'JKT',lat:-6.2088,lon:106.8456,img:'img/jakarta.webp',x:13,y:80,w:12,d:'-4s'}];
+const VARS=[
+ {id:'T2M',label:'Air temperature',tag:'Temperature',q:c=>`Has ${c} become hotter between 2001 and 2025?`,hi:'warmest',x:6,y:18},
+ {id:'PRECTOTCORR',label:'Precipitation',tag:'Rainfall',q:c=>`Is ${c} getting wetter or drier, 2001–2025?`,hi:'wettest',x:70,y:10},
+ {id:'RH2M',label:'Relative humidity',tag:'Humidity',q:c=>`Has the air in ${c} become more or less humid since 2001?`,hi:'most humid',x:84,y:44},
+ {id:'WS10M',label:'Wind speed',tag:'Wind',q:c=>`Are winds around ${c} changing between 2001 and 2025?`,hi:'windiest',x:-4,y:58},
+ {id:'ALLSKY_SFC_SW_DWN',label:'Surface solar radiation',tag:'Sunlight',q:c=>`Is ${c} receiving more or less sunlight at the surface since 2001?`,hi:'sunniest',x:60,y:86}];
+const UNIT={C:'°C','mm/year':'mm/yr','%':'%','m/s':'m/s','kW-hr/m^2/day':'kWh/m²/day'};
+const S={city:null,v:null,guess:null,evidence:null,request:null,seen:new Set([1]),done:new Set(),found:false,closed:false};
+const $=s=>document.querySelector(s);
+const imgOk={};
+function isleArt(c,cls){
+  const ok=imgOk[c.img];
+  return ok?`<img src="${c.img}" alt="" style="--d:${c.d}">`:`<div class="blob" style="--d:${c.d}"></div>`;
+}
+function probe(){CITIES.forEach(c=>{const i=new Image();i.onload=()=>{imgOk[c.img]=true;renderIsles()};i.onerror=()=>{imgOk[c.img]=false};i.src=c.img})}
+const MOB=[[50,58,60],[22,40,26],[78,40,26],[78,75,24],[22,75,24]];  // narrow: bottom islands sit above the step dock
+function renderIsles(){
+  const m=innerWidth<820;
+  $('#isles').innerHTML=CITIES.map((c,i)=>`<button class="isle ${i?'far':''} ${S.done.has(c.name)?'done':''}" style="left:${m?MOB[i][0]:c.x}%;top:${m?MOB[i][1]:c.y}%;width:${m?MOB[i][2]:c.w}vw;min-width:${m?0:(i?110:240)}px" data-city="${i}" aria-label="Open a case for ${c.name}">${isleArt(c)}<span class="tag">${c.name}<small>${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'}</small></span></button>`).join('');
+  document.querySelectorAll('.isle').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));
+}
+function go(n){
+  if((n>1 && !S.city) || (n>2 && !S.evidence)) return;
+  if(n===1 && S.request){
+    S.request.abort(); S.request=null;
+    $('#open').disabled=!S.v; $('#loadNote').textContent='';
+  }
+  document.querySelectorAll('.scene').forEach((s,i)=>s.classList.toggle('on',i+1===n));
+  document.body.dataset.scene=n; S.seen.add(n);
+  document.querySelectorAll('.dock button').forEach(b=>{const k=+b.dataset.step;b.classList.toggle('cur',k===n);b.classList.toggle('seen',S.seen.has(k));b.disabled=!S.seen.has(k)});
+  if(n===4) observe(); if(n===5) verify(); if(n===6) caseFile(); if(n===1) renderIsles();
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(+b.dataset.go));
+document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>go(+b.dataset.step));
+
+function resetCase(){
+  S.request?.abort(); S.request=null; S.evidence=null; S.guess=null; S.found=false; S.closed=false;
+  S.seen=new Set([1,2]); $('#concl').value=''; $('#reviewed').checked=false; $('#loadNote').textContent='';
+}
+function pickCity(i){
+  resetCase();
+  S.city=CITIES[i];S.v=null;S.guess=null;S.found=false;S.seen=new Set([1,2]);
+  const c=S.city;
+  $('#cityLine').textContent=`${c.name} · ${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'} ${c.lon.toFixed(2)}°E`;
+  $('#heroIsle').innerHTML=isleArt(c).replace('<div class="blob"','<div class="blob" style="width:70%;margin:auto"')+VARS.map(v=>`<button class="vtag" style="--x:${v.x}%;top:${v.y}%;--d:-${(Math.random()*4).toFixed(1)}s" data-v="${v.id}" aria-pressed="false">${v.tag}</button>`).join('');
+  document.querySelectorAll('.vtag').forEach(b=>b.onclick=()=>pickVar(b.dataset.v));
+  $('#q').value='';$('#open').disabled=true;$('#caseId').textContent=`CASE #${c.code}-—`;
+  go(2);
+}
+function pickVar(id){
+  if(S.v?.id===id)return;
+  resetCase();go(2);
+  S.v=VARS.find(v=>v.id===id);
+  document.querySelectorAll('.vtag').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
+  $('#q').value=S.v.q(S.city.name);$('#open').disabled=false;
+  $('#caseId').textContent=`CASE #${S.city.code}-${id==='ALLSKY_SFC_SW_DWN'?'SUN':id==='PRECTOTCORR'?'RAIN':id}`;
+}
+const settingsForCase=()=>({city:S.city.name,variable:S.v.id,start:2001,end:2025});
+async function api(path, body, signal){
+  const response=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
+  if(!response.ok){
+    const error=await response.json().catch(()=>({}));
+    throw new Error(typeof error.detail==='string'?error.detail:'The server could not complete this request.');
+  }
+  return response;
+}
+$('#open').onclick=async()=>{
+  if(!S.v)return;
+  S.request?.abort();
+  const request=new AbortController();S.request=request;
+  const button=$('#open'),note=$('#loadNote'),settings=settingsForCase();
+  button.disabled=true;note.textContent='Loading and validating NASA POWER observations…';
+  try{
+    const r=await (await api('investigate',settings,request.signal)).json();
+    if(S.request!==request)return;
+    if(!r.annual.length)throw new Error('NASA returned no complete annual observations for this case.');
+    resetCase();
+    S.evidence={...r,annual:r.annual.map(({year,value})=>[year,value]),retrieved:r.retrieved_at,src:r.source_url};
+    setupPredict();go(3);button.disabled=false;
+  }catch(e){
+    if(S.request===request){note.textContent=e.message;button.disabled=false;S.request=null;}
+  }
+};
+$('#reviewed').onchange=()=>{$('#reviewHint').hidden=$('#reviewed').checked};
+
+function rec(){return S.evidence}
+const W=900,H=380;let P={l:70,r:24,t:40,b:44};
+const narrow=()=>innerWidth<820;  // narrow labels are drawn at 26px in viewBox units, so they need wider margins
+function scales(r,additional=[]){
+  P=narrow()?{l:100,r:46,t:60,b:70}:{l:70,r:24,t:40,b:44};
+  const vals=[...r.annual.map(a=>a[1]),...additional];let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.35||1;lo-=pad;hi+=pad;
+  return{lo,hi,x:y=>P.l+(y-2001)/24*(W-P.l-P.r),y:v=>H-P.b-(v-lo)/(hi-lo)*(H-P.t-P.b),inv:py=>lo+(H-P.b-py)/(H-P.t-P.b)*(hi-lo)};
+}
+function fmt(v,u){const a=Math.abs(v);return (a>=100?v.toFixed(0):a>=10?v.toFixed(1):v.toFixed(2)).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function axes(r,sc){
+  let s='';for(let k=0;k<=4;k++){const v=sc.lo+(sc.hi-sc.lo)*k/4,y=sc.y(v);s+=`<line class="grid" x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}"/><text class="lbl" x="${P.l-10}" y="${y+4}" text-anchor="end">${fmt(v)}</text>`}
+  [2001,2005,2010,2015,2020,2025].forEach(yr=>s+=`<text class="lbl" x="${sc.x(yr)}" y="${H-P.b+(narrow()?40:22)}" text-anchor="middle">${yr}</text>`);
+  s+=`<line class="ax" x1="${P.l}" x2="${W-P.r}" y1="${H-P.b}" y2="${H-P.b}"/><text class="lbl" x="${P.l}" y="${P.t-(narrow()?26:20)}">${S.v.label} (${UNIT[r.unit]||r.unit})</text>`;
+  return s;
+}
+function guessPath(sc){if(!S.guess)return'';const pts=Object.entries(S.guess).sort((a,b)=>a[0]-b[0]);return `<path class="guess" d="${pts.map(([yr,v],i)=>(i?'L':'M')+sc.x(+yr)+' '+sc.y(v)).join(' ')}"/>`}
+
+function setupPredict(){
+  const r=rec(),sc=scales(r),svg=$('#predictSvg');let drawing=false,g={};
+  const paint=()=>{svg.innerHTML=axes(r,sc)+(Object.keys(g).length?`<path class="guess" d="${Object.entries(g).sort((a,b)=>a[0]-b[0]).map(([yr,v],i)=>(i?'L':'M')+sc.x(+yr)+' '+sc.y(v)).join(' ')}"/>`:`<text class="callout" x="${W/2}" y="${H/2}" text-anchor="middle" fill="#8aa096">✎ drag here to draw how you think ${S.v.label.toLowerCase()} changed</text>`)};
+  const pos=e=>{const b=svg.getBoundingClientRect();return[(e.clientX-b.left)/b.width*W,(e.clientY-b.top)/b.height*H]};
+  const add=e=>{const[px,py]=pos(e);const yr=Math.round(2001+(px-P.l)/(W-P.l-P.r)*24);if(yr<2001||yr>2025)return;g[yr]=Math.max(sc.lo,Math.min(sc.hi,sc.inv(py)));paint();$('#lock').disabled=Object.keys(g).length<6};
+  svg.onpointerdown=e=>{drawing=true;svg.setPointerCapture(e.pointerId);add(e)};svg.onpointermove=e=>drawing&&add(e);svg.onpointerup=()=>drawing=false;
+  $('#redraw').onclick=()=>{g={};paint();$('#lock').disabled=true};
+  $('#lock').onclick=()=>{
+    const ks=Object.keys(g).map(Number).sort((a,b)=>a-b),full={};
+    for(let y=2001;y<=2025;y++){let a=ks.filter(k=>k<=y).pop(),b=ks.find(k=>k>=y);if(a==null)a=b;if(b==null)b=a;full[y]=a===b?g[a]:g[a]+(g[b]-g[a])*(y-a)/(b-a)}
+    S.guess=full;go(4)};
+  $('#skipPredict').onclick=()=>{S.guess=null;go(4)};
+  paint();$('#lock').disabled=true;
+}
+
+let rainTimer=[];
+function observe(){
+  rainTimer.forEach(clearTimeout);rainTimer=[];
+  const r=rec(),sc=scales(r),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
+  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · NASA POWER, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  svg.innerHTML=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="6" cx="${sc.x(yr)}" cy="${sc.y(v)}" data-yr="${yr}" data-v="${v}" style="transform:translateY(-${sc.y(v)+40}px);opacity:0"/>`).join('')+`<g id="hl"></g>`;
+  const pts=[...svg.querySelectorAll('.pt')];
+  pts.forEach((p,i)=>rainTimer.push(setTimeout(()=>{p.style.transform='translateY(0)';p.style.opacity=1},120+i*70)));
+  const max=r.annual.reduce((a,b)=>b[1]>a[1]?b:a);
+  $('#toast').textContent='';$('#toVerify').disabled=true;
+  rainTimer.push(setTimeout(()=>{$('#toast').textContent=`Detective challenge: which year was the ${S.v.hi}? Click a point.`;$('#toVerify').disabled=false},200+pts.length*70));
+  pts.forEach(p=>p.onclick=()=>{
+    const yr=+p.dataset.yr,v=+p.dataset.v,hit=yr===max[0];
+    $('#hl').innerHTML=`<circle r="11" cx="${sc.x(yr)}" cy="${sc.y(v)}" fill="none" stroke="${hit?'#e0832f':'#9fb0a6'}" stroke-width="2.5"/><text class="callout" x="${Math.min(sc.x(yr),W-150)}" y="${sc.y(v)-18}">${yr}: ${fmt(v)} ${u}</text>`;
+    $('#toast').textContent=hit?`Found it: ${yr} was the ${S.v.hi} year in this record (${fmt(v)} ${u}). One year is not a trend; let's test the whole record.`:`${yr}: ${fmt(v)} ${u}. Not the ${S.v.hi} year yet. Keep looking.`;
+    if(hit)S.found=yr;
+  });
+}
+function evidenceNumber(stats,value){
+  const largest=Math.max(Math.abs(stats.slope_decade),...stats.ci95_year.map(v=>Math.abs(v*10)));
+  const digits=largest?Math.max(0,2-Math.floor(Math.log10(largest))):0;
+  return (value+0).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
+function verify(){
+  const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  const first=r.annual[0][0],last=r.annual.at(-1)[0];
+  const xm=r.annual.reduce((a,b)=>a+b[0],0)/r.annual.length,ym=r.annual.reduce((a,b)=>a+b[1],0)/r.annual.length;
+  const L=(m,yr)=>ym+m*(yr-xm);
+  const edges=s?s.ci95_year.flatMap(m=>[L(m,first),L(m,last)]):[];
+  const sc=scales(r,s?[...edges,...s.fitted]:[]);
+  let body=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="5" cx="${sc.x(yr)}" cy="${sc.y(v)}"/>`).join('');
+  if(s){
+    const [lo,hi]=s.ci95_year;
+    body+=`<path class="fan" d="M${sc.x(first)} ${sc.y(L(hi,first))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(last)} ${sc.y(L(hi,last))} L${sc.x(last)} ${sc.y(L(lo,last))} L${sc.x(xm)} ${sc.y(ym)} L${sc.x(first)} ${sc.y(L(lo,first))}Z" style="opacity:0;transition:opacity 1s .9s" id="fan"/>`;
+    const d=`M${sc.x(first)} ${sc.y(s.fitted[0])} L${sc.x(last)} ${sc.y(s.fitted[s.fitted.length-1])}`;
+    body+=`<path class="trend" id="tl" d="${d}" stroke-dasharray="2000" stroke-dashoffset="2000" style="transition:stroke-dashoffset 1.2s ease"/>`;
+    body+=`<text class="callout" x="${W-P.r}" y="${P.t+8}" text-anchor="end">— fitted trend · shaded: plausible slopes (95% CI)</text>`;
+  }
+  svg.innerHTML=body;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
+  if(!s){$('#metrics').innerHTML='';$('#plain').textContent='No valid trend inference is available for this record. Record the data limitation; do not infer a trend from missing evidence.';return}
+  const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
+  $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
+  const dir=s.direction==='increasing'?'rises':s.direction==='decreasing'?'falls':'changes';
+  let txt=`Over ${s.n} years, the fitted line ${dir} by about ${evidenceNumber(s,Math.abs(s.slope_decade))} ${u} per decade. `;
+  txt+=s.significant?`The interval excludes zero, so this is evidence of a ${s.direction==='increasing'?'rise':'decline'} at the 0.05 level. `:`The interval includes zero, so the data cannot distinguish this slope from no linear change. That is not proof of no change. `;
+  txt+=`It describes a pattern in observational data; it cannot tell us what caused it.`;
+  if(S.guess){const gs=(S.guess[2025]-S.guess[2001])/24*10;const same=Math.sign(gs)===Math.sign(s.slope_decade)&&Math.abs(gs)>1e-9;txt+=` Your guess ${gs>0?'rose':'fell'} about ${fmt(Math.abs(gs))} ${u} per decade${same?', the same direction as the data.':', a different direction from the data. Interesting: what made you expect that?'}`}
+  $('#plain').textContent=txt;
+}
+function caseFile(){
+  const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;
+  const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}/decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
+  $('#evid').innerHTML=items.map(([k,v])=>`<div><small>${k}</small>${v.replace(/</g,'&lt;')}</div>`).join('');
+  $('#stamp').classList.toggle('on',S.closed);$('#exportRow').hidden=!S.closed;$('#exportNote').hidden=true;$('#close').disabled=S.closed||!enough($('#concl').value);
+  $('#reviewHint').hidden=$('#reviewed').checked;  // a reminder only: export stays available and the server decides the report status
+}
+function enough(t){const cjk=(t.match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;const words=t.replace(/[\u3400-\u9fff\uf900-\ufaff]/g,' ').trim().split(/\s+/).filter(Boolean).length;return cjk>=8||words>=6||(cjk>=4&&words>=3)}
+$('#concl').oninput=e=>{S.closed=false;$('#stamp').classList.remove('on');$('#exportRow').hidden=true;const ok=enough(e.target.value);$('#close').disabled=!ok;$('#closeHint').textContent=ok?'Ready. Closing the case unlocks the report.':'Write at least one full sentence to close the case (about 6 words or 8 characters).'};
+function reportText(){const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;return [`ClimateLens case report: ${S.city.name} / ${S.v.label}`,`Question: ${$('#q').value}`,`Prediction: ${S.guess?fmt((S.guess[2025]-S.guess[2001])/2.4)+' '+u+' per decade (drawn)':'Skipped'}`,s?`Evidence: ${evidenceNumber(s,s.slope_decade)} ${u} per decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}, p ${s.p_value<.001?'< 0.001':'= '+ClimateUI.pValue(s.p_value)} (n=${s.n})`:'Evidence: no valid trend inference',`Limits: one NASA POWER grid cell, not a city average; a trend is not a cause or a forecast.`,`Student conclusion: ${$('#concl').value.trim()}`,`Source: ${r.src}`].join('\n')}
+$('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;n.textContent='Preparing your PDF report…';b.disabled=true;
+  try{
+    const r=rec(),u=UNIT[r.unit]||r.unit,fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
+    const body={result_id:r.id,settings:r.settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
+    const rep=await api('report',body);
+    if(rec()!==r)return;
+    if(!rep.headers.get('content-type')?.includes('application/pdf'))throw new Error('The server did not return a PDF.');
+    const url=URL.createObjectURL(await rep.blob()),a=document.createElement('a');a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+    n.textContent='Your PDF report is downloading.';
+  }catch(e){n.textContent=e.message+' Reopen the case if its evidence expired, or use “Copy report text”.'}
+  finally{b.disabled=false}};
+$('#copy').onclick=async()=>{const n=$('#exportNote');n.hidden=false;try{await navigator.clipboard.writeText(reportText());n.textContent='Report copied. Paste it into a document or message.'}catch(e){n.textContent='Copy was blocked by this browser. Select your conclusion and copy it manually.'}};
+$('#close').onclick=()=>{S.closed=true;$('#stamp').classList.add('on');S.done.add(S.city.name);$('#exportRow').hidden=false;$('#close').disabled=true;$('#closeHint').textContent='Case closed. Download your report, or go back to the sky for the next island.'};
+$('#toVerify').onclick=()=>go(5);$('#toCase').onclick=()=>go(6);
+probe();renderIsles();
+</script>
+</body>
+</html>

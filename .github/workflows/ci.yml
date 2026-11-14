@@ -60,3 +60,15 @@ jobs:
           trap 'kill "$SERVER_PID"' EXIT
           python scripts/smoke.py
           python scripts/verify_browser.py
+      - name: Verify detective cases and downloaded PDF evidence
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.event_name == 'push'
+        env:
+          LLM_API_KEY: ''
+        run: |
+          python -m pip install playwright pypdf
+          python -m playwright install --with-deps chromium
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/climatelens-detective.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          python scripts/smoke.py
+          python scripts/verify_detective.py
