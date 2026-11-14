@@ -1,4 +1,5 @@
 """Exercise the detective interface against real NASA observations and its PDF."""
+import csv
 import io
 import math
 
@@ -28,6 +29,16 @@ with sync_playwright() as playwright:
             "points => points.map(p => ({year: +p.dataset.yr, value: +p.dataset.v}))"
         )
         assert points == [{key: row[key] for key in ("year", "value")} for row in result["annual"]]
+        if city == "Singapore":
+            page.get_by_text("Data details", exact=True).click()
+            with page.expect_download() as annual_csv:
+                page.get_by_role("button", name="Download annual CSV").click()
+            with annual_csv.value.path().open(newline="") as stream:
+                assert [dict(row, value=float(row["value"])) for row in csv.DictReader(stream)] == [
+                    {"year": str(row["year"]), "value": row["value"], "unit": result["unit"]}
+                    for row in result["annual"]
+                ]
+            page.get_by_text("Data details", exact=True).click()
         page.locator("#toVerify").click()
         stats = result["stats"]
         interval = [value * 10 for value in stats["ci95_year"]]
@@ -44,6 +55,33 @@ with sync_playwright() as playwright:
             p_text = str(p_value)
         assert metrics[2] == ("< 0.001" if p_value < .001 else p_text), metrics
         expect(page.locator("#tl")).to_be_attached()
+        comparison = None
+        if city == "Singapore":
+            page.get_by_text("Compare with another city", exact=True).click()
+            page.locator("#compareCity").select_option("Bangkok")
+            def respond_with_missing_year(route):
+                route.fulfill(json={
+                    **result,
+                    "settings": {**result["settings"], "city": "Bangkok"},
+                    "annual": result["annual"][1:],
+                })
+
+            page.route("**/api/investigate", respond_with_missing_year)
+            page.locator("#compareRun").click()
+            expect(page.locator("#compareStatus")).to_contain_text("different complete years")
+            expect(page.locator("#compareResult")).to_be_hidden()
+            page.unroute("**/api/investigate", respond_with_missing_year)
+            with page.expect_response(lambda response: response.url.endswith("/api/investigate"), timeout=75000) as secondary:
+                page.locator("#compareRun").click()
+            assert secondary.value.ok
+            comparison = secondary.value.json()
+            expect(page.locator("#compareStatus")).to_contain_text("25 matching years")
+            comparison_rows = [
+                " ".join(row.locator("th,td").all_text_contents())
+                for row in page.locator("#compareRows tr").all()
+            ]
+            assert len(comparison_rows) == 2
+            page.get_by_text("Compare with another city", exact=True).click()
         page.locator("#reviewed").check()
         page.locator("#toCase").click()
         conclusion = "观测记录显示变化趋势，不能证明原因。"
@@ -54,7 +92,10 @@ with sync_playwright() as playwright:
                 page.locator("#pdf").click()
         assert report.value.ok
         assert report.value.request.post_data_json["result_id"] == result["id"]
-        assert sum(url.endswith("/api/investigate") for url in requests) == 1, requests
+        assert report.value.request.post_data_json.get("comparison_result_id") == (
+            comparison["id"] if comparison else None
+        )
+        assert sum(url.endswith("/api/investigate") for url in requests) == (3 if comparison else 1), requests
         pdf = download.value.path().read_bytes()
         assert pdf.startswith(b"%PDF-") and b"/FontFile2" in pdf
         extracted = " ".join(
@@ -67,7 +108,14 @@ with sync_playwright() as playwright:
         for row in result["annual"]:
             expected = f"{row['year']} {row['value']:,.2f}"
             assert expected in extracted, expected
+        if comparison:
+            assert "City trend comparison" in extracted
+            assert comparison["source_url"] in "".join(extracted.split())
+            for row in comparison_rows:
+                assert row in extracted, row
+        else:
+            assert "City trend comparison" not in extracted
         assert not errors, errors
-        print(f"{city} {variable}: chart, statistics and PDF match a single NASA result", flush=True)
+        print(f"{city} {variable}: chart, statistics and PDF match the NASA results", flush=True)
         page.close()
     browser.close()

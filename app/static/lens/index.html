@@ -63,6 +63,19 @@ textarea:focus{border-color:var(--teal)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
 .small{font-size:13px;color:var(--muted);line-height:1.5}
 /* chart scenes */
+#s4,#s5{overflow-y:auto;align-items:flex-start;padding:76px 0 90px}
+#s4 .stage,#s5 .stage{margin:auto}
+.city-comparison select{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px}
+.city-comparison table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.city-comparison th,.city-comparison td{border-bottom:1px solid var(--line);padding:8px;text-align:left}
+.data-details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.data-details summary{cursor:pointer;font-weight:600}
+.data-details dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px 12px}
+.data-details dt{font-weight:600}
+.data-details dd{margin:0;overflow-wrap:anywhere}
+.data-details a{color:var(--ink);text-underline-offset:3px}
+.data-details ul{padding-left:20px}
+
 .stage{width:min(1100px,94vw)}
 .card{background:rgba(251,250,245,.94);border:1px solid var(--line);border-radius:22px;padding:22px 24px;box-shadow:0 20px 50px rgba(23,59,55,.1)}
 .card header{position:static;padding:0 0 6px}
@@ -122,7 +135,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <div class="intro">
     <div class="eyebrow">Be an Earth system trend detective</div>
     <h1>Every island<br>is a <em>case</em>.</h1>
-    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER observations from 2001–2025. Pick an island to open an investigation.</p>
+    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER climate data from 2001–2025. Pick an island to open an investigation.</p>
     <div class="hint">Click an island to begin</div>
   </div>
   <div id="isles" style="position:absolute;inset:0;z-index:2"></div>
@@ -163,6 +176,16 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <p class="small" id="obsSub"></p>
     <svg class="chart" id="obsSvg" viewBox="0 0 900 380" aria-label="Annual observations"></svg>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <p class="note" id="dataIssue" hidden></p>
+    <details class="data-details">
+      <summary>Data details</summary>
+      <dl class="small" id="dataMeta"></dl>
+      <ul class="small" id="dataExclusions"></ul>
+      <div class="row">
+        <a id="nasaSourceLink" target="_blank" rel="noopener noreferrer">Open original NASA POWER data</a>
+        <button class="btn ghost" id="downloadAnnual" type="button">Download annual CSV</button>
+      </div>
+    </details>
     <div class="row"><button class="btn" id="toVerify" disabled>How strong is the evidence? →</button></div>
   </div>
 </section>
@@ -175,6 +198,23 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <svg class="chart" id="verSvg" viewBox="0 0 900 380" aria-label="Observations with trend line and slope uncertainty"></svg>
     <div class="metrics" id="metrics"></div>
     <p class="plain" id="plain"></p>
+    <details class="data-details city-comparison" id="cityComparison">
+      <summary>Compare with another city</summary>
+      <form class="row" id="compareForm">
+        <label for="compareCity">Comparison city</label>
+        <select id="compareCity" required></select>
+        <button class="btn ghost" type="submit" id="compareRun">Compare</button>
+      </form>
+      <p class="small" id="compareScope"></p>
+      <p class="small" role="status" id="compareStatus"></p>
+      <div id="compareResult" hidden>
+        <table aria-label="City trend comparison">
+          <thead><tr><th scope="col">City</th><th scope="col">Change per decade</th><th scope="col">95% confidence interval</th></tr></thead>
+          <tbody id="compareRows"></tbody>
+        </table>
+        <p class="small">Each interval describes one city’s trend. To determine whether the trends differ statistically, test the difference between the slopes directly.</p>
+      </div>
+    </details>
     <label class="check"><input type="checkbox" id="reviewed"> I have reviewed the evidence above.</label>
     <div class="row"><button class="btn" id="toCase">Write up the case →</button></div>
   </div>
@@ -253,6 +293,8 @@ document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>go(+b.dataset
 
 function resetCase(){
   S.request?.abort(); S.request=null; S.evidence=null; S.guess=null; S.found=false; S.closed=false;
+  $('#s4 details').open=false;
+  resetComparison();
   S.seen=new Set([1,2]); $('#concl').value=''; $('#reviewed').checked=false; $('#loadNote').textContent='';
 }
 function pickCity(i){
@@ -291,10 +333,10 @@ $('#open').onclick=async()=>{
   try{
     const r=await (await api('investigate',settings,request.signal)).json();
     if(S.request!==request)return;
-    if(!r.annual.length)throw new Error('NASA returned no complete annual observations for this case.');
     resetCase();
     S.evidence={...r,annual:r.annual.map(({year,value})=>[year,value]),retrieved:r.retrieved_at,src:r.source_url};
-    setupPredict();go(3);button.disabled=false;
+    if(r.annual.length){setupPredict();go(3)}else{go(4)}
+    button.disabled=false;
   }catch(e){
     if(S.request===request){note.textContent=e.message;button.disabled=false;S.request=null;}
   }
@@ -333,16 +375,63 @@ function setupPredict(){
   paint();$('#lock').disabled=true;
 }
 
+function dataSourceMode(r){
+  if(r.source_mode==='archive')return 'Saved NASA POWER response';
+  if(r.source_mode==='cache')return 'NASA POWER · cached response';
+  return 'NASA POWER · live query';
+}
+function renderDataDetails(r){
+  const {start,end}=r.settings;
+  const years=r.annual.length;
+  const range=years?years===1?String(r.annual[0][0]):r.annual[0][0]+'–'+r.annual.at(-1)[0]:'None';
+  const products=(r.source_header?.sources||[]).map(source=>source==='MERRA2'?'MERRA-2':source);
+  const fields=[
+    ['Requested coordinates', `${S.city.lat}°, ${S.city.lon}° (one grid cell near the city)`],
+    ['NASA data product', products.join(', ')||'Unspecified in the NASA response'],
+    ['Units', `${ClimateUI.unit(r.source_unit)} (source) → ${ClimateUI.unit(r.unit)} (annual)`],
+    ['Annual aggregation', r.aggregation],
+    ['Requested period', `${start}–${end}`],
+    ['Available years', `${range} · ${years} of ${end-start+1} complete`],
+    ['Data source', dataSourceMode(r)],
+    ['Retrieved (UTC)', r.retrieved],
+  ];
+  $('#dataMeta').replaceChildren(...fields.flatMap(([name,value])=>{
+    const label=document.createElement('dt'), detail=document.createElement('dd');
+    label.textContent=name;detail.textContent=value;
+    return [label,detail];
+  }));
+  $('#dataExclusions').replaceChildren(...ClimateUI.excluded(r.excluded_years).map(message=>{
+    const item=document.createElement('li');item.textContent=message;return item;
+  }));
+  $('#nasaSourceLink').href=r.src;
+  $('#downloadAnnual').hidden=!years;
+  const issue=$('#dataIssue');
+  issue.hidden=!r.analysis_error&&!r.excluded_years.length;
+  issue.textContent=[r.excluded_years.length?`${r.excluded_years.length} year(s) excluded. See Data details for the affected months.`:'',r.analysis_error].filter(Boolean).join(' ');
+}
+$('#downloadAnnual').onclick=()=>{
+  const r=rec(),{variable,start,end}=r.settings;
+  const lines=['year,value,unit',...r.annual.map(([year,value])=>`${year},${value},${r.unit}`)];
+  const url=URL.createObjectURL(new Blob([lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');
+  link.href=url;link.download=`ClimateLens-${S.city.code}-${variable}-${start}-${end}.csv`;
+  link.click();setTimeout(()=>URL.revokeObjectURL(url),4000);
+};
+
 let rainTimer=[];
 function observe(){
   rainTimer.forEach(clearTimeout);rainTimer=[];
-  const r=rec(),sc=scales(r),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
-  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · NASA POWER, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  const r=rec(),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
+  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · ${dataSourceMode(r)}, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  renderDataDetails(r);
+  svg.hidden=!r.annual.length;
+  $('#toast').textContent='';$('#toVerify').disabled=!!r.annual.length;
+  if(!r.annual.length)return;
+  const sc=scales(r);
   svg.innerHTML=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="6" cx="${sc.x(yr)}" cy="${sc.y(v)}" data-yr="${yr}" data-v="${v}" style="transform:translateY(-${sc.y(v)+40}px);opacity:0"/>`).join('')+`<g id="hl"></g>`;
   const pts=[...svg.querySelectorAll('.pt')];
   pts.forEach((p,i)=>rainTimer.push(setTimeout(()=>{p.style.transform='translateY(0)';p.style.opacity=1},120+i*70)));
   const max=r.annual.reduce((a,b)=>b[1]>a[1]?b:a);
-  $('#toast').textContent='';$('#toVerify').disabled=true;
   rainTimer.push(setTimeout(()=>{$('#toast').textContent=`Detective challenge: which year was the ${S.v.hi}? Click a point.`;$('#toVerify').disabled=false},200+pts.length*70));
   pts.forEach(p=>p.onclick=()=>{
     const yr=+p.dataset.yr,v=+p.dataset.v,hit=yr===max[0];
@@ -356,8 +445,89 @@ function evidenceNumber(stats,value){
   const digits=largest?Math.max(0,2-Math.floor(Math.log10(largest))):0;
   return (value+0).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
 }
+let comparisonRequest, comparisonResult;
+function clearComparison(){
+  comparisonRequest?.abort();
+  comparisonRequest=null;
+  comparisonResult=null;
+  $('#compareRun').disabled=false;
+  $('#compareStatus').textContent='';
+  $('#compareResult').hidden=true;
+  $('#compareRows').replaceChildren();
+}
+function resetComparison(){
+  clearComparison();
+  $('#cityComparison').open=false;
+  $('#compareCity').replaceChildren();
+}
+$('#compareCity').onchange=clearComparison;
+$('#compareForm').onsubmit=async event=>{
+  event.preventDefault();
+  const primary=rec(), city=$('#compareCity').value;
+  if(!primary?.stats||!CITIES.some(candidate=>candidate.name===city&&city!==primary.settings.city))return;
+  clearComparison();
+  const request=new AbortController();
+  comparisonRequest=request;
+  const status=$('#compareStatus');
+  status.textContent=`Loading NASA POWER data for ${city}…`;
+  $('#compareRun').disabled=true;
+  try{
+    const other=await (await api('investigate',{...primary.settings,city},request.signal)).json();
+    if(comparisonRequest!==request)return;
+    if(other.settings.city!==city||['variable','start','end'].some(key=>other.settings[key]!==primary.settings[key])||other.unit!==primary.unit){
+      status.textContent='The returned data do not match the selected indicator, units or period.';
+      return;
+    }
+    if(!other.stats){
+      status.textContent=city+': '+(other.analysis_error||'Trend evidence is unavailable.');
+      return;
+    }
+    const years=primary.annual.map(([year])=>year);
+    if(years.length!==other.annual.length||years.some((year,index)=>year!==other.annual[index].year)){
+      status.textContent='The two records cover different complete years. A comparison requires matching annual coverage.';
+      return;
+    }
+    const unit=ClimateUI.unit(primary.unit);
+    for(const record of [primary,other]){
+      const row=document.createElement('tr');
+      const stats=record.stats;
+      const [low,high]=stats.ci95_year.map(value=>evidenceNumber(stats,value*10));
+      const values=[record.settings.city,`${evidenceNumber(stats,stats.slope_decade)} ${unit}`,`${low} to ${high} ${unit}`];
+      values.forEach((value,index)=>{
+        const cell=document.createElement(index===0?'th':'td');
+        if(index===0)cell.scope='row';
+        cell.textContent=value;
+        row.append(cell);
+      });
+      $('#compareRows').append(row);
+    }
+    comparisonResult=other;
+    $('#compareResult').hidden=false;
+    status.textContent=`Compared ${years.length} matching years, ${years[0]}–${years.at(-1)}. ${primary.settings.city}: ${dataSourceMode(primary)}. ${city}: ${dataSourceMode(other)}.`;
+  }catch(error){
+    if(comparisonRequest===request)status.textContent=error.message;
+  }finally{
+    if(comparisonRequest===request){
+      comparisonRequest=null;
+      $('#compareRun').disabled=false;
+    }
+  }
+};
 function verify(){
   const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  $('#cityComparison').hidden=!s;
+  if(s&&!$('#compareCity').options.length){
+    $('#compareScope').textContent=`${S.v.label} · ${r.settings.start}–${r.settings.end} · NASA POWER`;
+    for(const city of CITIES.filter(city=>city.name!==r.settings.city)){
+      $('#compareCity').add(new Option(city.name,city.name));
+    }
+  }
+  svg.hidden=!r.annual.length;
+  if(!s){
+    $('#metrics').replaceChildren();
+    $('#plain').textContent=r.analysis_error||'No valid trend inference is available for this record.';
+    if(!r.annual.length)return;
+  }
   const first=r.annual[0][0],last=r.annual.at(-1)[0];
   const xm=r.annual.reduce((a,b)=>a+b[0],0)/r.annual.length,ym=r.annual.reduce((a,b)=>a+b[1],0)/r.annual.length;
   const L=(m,yr)=>ym+m*(yr-xm);
@@ -373,7 +543,7 @@ function verify(){
   }
   svg.innerHTML=body;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
-  if(!s){$('#metrics').innerHTML='';$('#plain').textContent='No valid trend inference is available for this record. Record the data limitation; do not infer a trend from missing evidence.';return}
+  if(!s)return;
   const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
   $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
   const dir=s.direction==='increasing'?'rises':s.direction==='decreasing'?'falls':'changes';
@@ -397,6 +567,7 @@ $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;
   try{
     const r=rec(),u=UNIT[r.unit]||r.unit,fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
     const body={result_id:r.id,settings:r.settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
+    if(comparisonResult)body.comparison_result_id=comparisonResult.id;
     const rep=await api('report',body);
     if(rec()!==r)return;
     if(!rep.headers.get('content-type')?.includes('application/pdf'))throw new Error('The server did not return a PDF.');

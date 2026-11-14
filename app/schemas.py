@@ -22,3 +22,6 @@ class Writing(BaseModel):
  reviewed:bool=False
  message:str=Field(default='',max_length=2000)
 
+
+class Report(Writing):
+ comparison_result_id:str|None=None

@@ -5,13 +5,13 @@ import math
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from .data import VARIABLES
 from .evidence import explanation
-from .schemas import Writing
-from .state import result_for
+from .schemas import Report
+from .state import RESULTS, result_for
 
 ROOT = Path(__file__).resolve().parent
 router = APIRouter()
@@ -61,15 +61,32 @@ def trend_chart(r,s):
  if fitted: draw.add(Line(R-155,200,R-145,200,strokeColor=colors.darkorange,strokeWidth=1.5)); draw.add(String(R-143,197,'Fitted linear trend (OLS)',fontSize=8))
  return draw
 
+def comparison_for(primary, identifier):
+ if identifier is None:
+  return None
+ secondary=RESULTS.get(identifier)
+ if secondary is None:
+  raise HTTPException(410,'The comparison has expired. Run the comparison again.')
+ if not primary or not primary['stats'] or not secondary['stats']:
+  raise HTTPException(409,'Both cities need valid trend evidence.')
+ a,b=primary['settings'],secondary['settings']
+ if a['city']==b['city'] or any(a[key]!=b[key] for key in ('variable','start','end')) or primary['unit']!=secondary['unit']:
+  raise HTTPException(409,'Compare two distinct cities with the same indicator, units and requested period.')
+ if [row['year'] for row in primary['annual']] != [row['year'] for row in secondary['annual']]:
+  raise HTTPException(409,'Both cities must have the same complete years.')
+ return secondary
+
 @router.post('/api/report')
-def report(w:Writing):
+def report(w:Report):
+ r=result_for(w)
+ comparison=comparison_for(r,w.comparison_result_id)
+ s=r['stats'] if r else None
  from reportlab.lib import colors
  from reportlab.lib.styles import getSampleStyleSheet
  from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
  register_cjk_font()
  import reportlab.platypus.paragraph as rlpara  # reportlab's line-start rules are Japanese-centric; add Chinese full-width punctuation (idempotent)
  if isinstance(getattr(rlpara,'ALL_CANNOT_START',None),str): rlpara.ALL_CANNOT_START+=''.join(c for c in '，；：！？、）】」』》〉' if c not in rlpara.ALL_CANNOT_START)
- r=result_for(w); s=r['stats'] if r else None
  status='Investigation completed' if s and w.conclusion.strip() and w.reviewed else 'Analysis completed — conclusion or review incomplete' if s else 'Incomplete evidence — analysis unavailable'
  buffer=io.BytesIO(); styles=getSampleStyleSheet(); styles['Heading2'].keepWithNext=1
  blocks=[]
@@ -91,9 +108,35 @@ def report(w:Writing):
  if s:
   para(s['method'])
   for item in s['limitations']: para(item)
+ if comparison:
+  from reportlab.platypus import KeepTogether
+  years=[row['year'] for row in r['annual']]
+  unit={'C':'°C','kW-hr/m^2/day':'kWh/m²/day'}.get(r['unit'],r['unit'])
+  rows=[['City','Change per decade','95% confidence interval']]
+  for record in (r,comparison):
+   stats=record['stats']
+   slope=stats['slope_decade']
+   low,high=(value*10 for value in stats['ci95_year'])
+   largest=max(abs(slope),abs(low),abs(high))
+   digits=max(0,2-math.floor(math.log10(largest))) if largest else 0
+   rows.append([record['settings']['city'],f'{slope+0.:,.{digits}f} {unit}',
+                f'{low+0.:,.{digits}f} to {high+0.:,.{digits}f} {unit}'])
+  table=Table(rows,hAlign='LEFT',style=[('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e2efeb')),
+                                        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold')])
+  heading_start=len(blocks)
+  para('City trend comparison','Heading2')
+  para(f"{spec['label']} | {years[0]}–{years[-1]} | {len(years)} matching complete years")
+  blocks.append(table)
+  blocks[heading_start:]=[KeepTogether(blocks[heading_start:])]
+  para('Each interval describes one city’s trend. To determine whether the trends differ statistically, test the difference between the slopes directly.')
+  para('Comparison NASA POWER source: '+comparison['source_url'])
+  if comparison.get('source_mode')=='archive': para('Comparison source mode: saved NASA POWER response.')
+  para('Comparison data retrieved: '+comparison['retrieved_at'])
  para('Student-authored conclusion (not endorsed or graded)','Heading2'); para(w.conclusion or 'Not yet written')
  if r:
-  para('NASA POWER source','Heading2'); para(r['source_url']); para('Retrieved: '+r['retrieved_at']); para('Annual aggregation: '+r['aggregation'])
+  para('NASA POWER source','Heading2')
+  if r.get('source_mode')=='archive': para('Source mode: saved NASA POWER response.')
+  para(r['source_url']); para('Retrieved: '+r['retrieved_at']); para('Annual aggregation: '+r['aggregation'])
   para('Excluded years: '+('; '.join(f"{e['year']} (missing or invalid months: {', '.join(map(str,e['missing_or_invalid_months']))})" for e in r['excluded_years']) or 'none'))
   class AnnualTable(Table):  # every piece re-applies the rule (header+3 rows before a break, 3 after); reportlab drops it on split pieces, which let a leftover gap take a lone row
    def split(self,aw,ah): self._rowSplitRange=(4,-3); return Table.split(self,aw,ah)

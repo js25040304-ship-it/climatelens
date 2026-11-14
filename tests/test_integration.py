@@ -100,3 +100,4 @@ class IntegrationTests(unittest.TestCase):
  def test_live_singapore(self):
   r=self.client.post('/api/investigate',json={'city':'Singapore','variable':'T2M','start':2001,'end':2025})
   self.assertEqual(r.status_code,200,r.text);self.assertEqual(len(r.json()['annual']),25);self.assertIsNotNone(r.json()['stats'])
+  self.assertEqual(r.json()['source_mode'],'live')
