@@ -61,8 +61,9 @@ with sync_playwright() as playwright:
             " ".join(part.split()) for part in
             (sheet.extract_text() for sheet in PdfReader(io.BytesIO(pdf)).pages)
         )
-        for expected in ("Investigation completed", conclusion, bounds, ('p < 0.001' if p_value < .001 else f'p = {p_text}'), result["source_url"], result["retrieved_at"]):
+        for expected in ("Investigation completed", conclusion, bounds, ('p < 0.001' if p_value < .001 else f'p = {p_text}'), result["retrieved_at"]):
             assert expected in extracted, expected
+        assert result["source_url"] in "".join(extracted.split()), extracted
         for row in result["annual"]:
             expected = f"{row['year']} {row['value']:,.2f}"
             assert expected in extracted, expected
