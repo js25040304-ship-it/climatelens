@@ -157,6 +157,19 @@ LLM_MODEL=填写你有权限使用的模型名称
 
 模型名按实际账户权限选择；修改 `.env` 后重启服务。外部 AI 请求可能产生提供商费用；无密钥模式不调用模型。
 
+**`max_tokens` 与 `max_completion_tokens`：** 有些提供商或新模型（例如 OpenAI 的推理模型）会拒绝 `max_tokens`，要求改用 `max_completion_tokens`；有些模型还不接受 `temperature`。另一方面，部分兼容服务不认识 `max_completion_tokens`。因此用 `.env` 中的 `LLM_TOKEN_PARAM` 控制：
+
+| `LLM_TOKEN_PARAM` | 行为 |
+| --- | --- |
+| 留空（默认，自动） | 先发送 `max_tokens`。如果提供商返回 400，且错误信息明确提到 `max_tokens`，就改用 `max_completion_tokens`、去掉 `temperature`，**只重试一次**。 |
+| `max_tokens` 或 `max_completion_tokens`（手动） | 始终使用该参数，**不会自动切换**。 |
+
+无论哪种设置，只要 400 错误信息明确提到 `temperature`，都会去掉 `temperature` 重试一次。其他 400、401/403、429、5xx、超时、非 JSON、内容为空或格式异常都不重试，直接降级为确定性反馈。返回里的 `reason` 字段会说明原因：`no_key` / `timeout` / `auth` / `http_error` / `bad_response`。服务器日志打印一行 `AI tutor fallback: reason=… error=<异常类型> status=<状态码>`，不会记录密钥和提供商返回的正文。以上行为都用 mock 测过（`tests/test_tutor_report.py`），**还没有用真实提供商验证**；哪些模型需要哪个参数，以提供商当前文档为准。
+
+**提示注入：** 学生文字只放在发给模型的 JSON 字段 `untrusted_student_text` 里，不进入系统提示词。系统提示词要求模型不执行学生文字中的任何指令、不宣称结论正确或已评分、不替学生写结论，并用学生使用的语言回复。确定性反馈不读取学生文字中的指令，测试证明注入文本得到的反馈与普通文本完全相同。mock 测试只能证明我们的代码做了隔离，不能证明真实模型一定遵守。
+
+**PDF 自查：** 图表纵轴用可读刻度（如 `2,400`），带变量名和单位；横轴写 Year。英文用 Helvetica，中文和全角字符用 STSong-Light（不嵌入 PDF，由阅读器提供字体）。自动测试只检查内容；排版需要把 PDF 转成图片逐页查看。演示步骤见 [`docs/demo-script.md`](docs/demo-script.md)。
+
 验证成功响应、超时、无效密钥、提供商错误都不会破坏数据分析；反馈围绕事实、证据、统计推理、谨慎表达与独立思考。现阶段 AI 输出仍需人工核对，不能宣称绝不会幻觉。问题解析目前是关键词规则，不是 LLM 解析。
 
 PDF 至少测三份：完整探究、未写结论、没有有效证据。再测长段中文/英文和 `< > &` 字符。逐页打开检查图表、轴标签、来源 URL、分页、结论是否完整；PDF 文件头正确不代表排版正确。反馈质量或学生是否接受建议都不能阻止导出。
