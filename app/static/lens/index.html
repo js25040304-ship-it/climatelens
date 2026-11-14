@@ -63,6 +63,16 @@ textarea:focus{border-color:var(--teal)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
 .small{font-size:13px;color:var(--muted);line-height:1.5}
 /* chart scenes */
+#s4{overflow-y:auto;align-items:flex-start;padding:76px 0 90px}
+#s4 .stage{margin:auto}
+.data-details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.data-details summary{cursor:pointer;font-weight:600}
+.data-details dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px 12px}
+.data-details dt{font-weight:600}
+.data-details dd{margin:0;overflow-wrap:anywhere}
+.data-details a{color:var(--ink);text-underline-offset:3px}
+.data-details ul{padding-left:20px}
+
 .stage{width:min(1100px,94vw)}
 .card{background:rgba(251,250,245,.94);border:1px solid var(--line);border-radius:22px;padding:22px 24px;box-shadow:0 20px 50px rgba(23,59,55,.1)}
 .card header{position:static;padding:0 0 6px}
@@ -122,7 +132,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <div class="intro">
     <div class="eyebrow">Be an Earth system trend detective</div>
     <h1>Every island<br>is a <em>case</em>.</h1>
-    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER observations from 2001–2025. Pick an island to open an investigation.</p>
+    <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER climate data from 2001–2025. Pick an island to open an investigation.</p>
     <div class="hint">Click an island to begin</div>
   </div>
   <div id="isles" style="position:absolute;inset:0;z-index:2"></div>
@@ -163,6 +173,16 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <p class="small" id="obsSub"></p>
     <svg class="chart" id="obsSvg" viewBox="0 0 900 380" aria-label="Annual observations"></svg>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <p class="note" id="dataIssue" hidden></p>
+    <details class="data-details">
+      <summary>Data details</summary>
+      <dl class="small" id="dataMeta"></dl>
+      <ul class="small" id="dataExclusions"></ul>
+      <div class="row">
+        <a id="nasaSourceLink" target="_blank" rel="noopener noreferrer">Open original NASA POWER data</a>
+        <button class="btn ghost" id="downloadAnnual" type="button">Download annual CSV</button>
+      </div>
+    </details>
     <div class="row"><button class="btn" id="toVerify" disabled>How strong is the evidence? →</button></div>
   </div>
 </section>
@@ -253,6 +273,7 @@ document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>go(+b.dataset
 
 function resetCase(){
   S.request?.abort(); S.request=null; S.evidence=null; S.guess=null; S.found=false; S.closed=false;
+  $('#s4 details').open=false;
   S.seen=new Set([1,2]); $('#concl').value=''; $('#reviewed').checked=false; $('#loadNote').textContent='';
 }
 function pickCity(i){
@@ -291,10 +312,10 @@ $('#open').onclick=async()=>{
   try{
     const r=await (await api('investigate',settings,request.signal)).json();
     if(S.request!==request)return;
-    if(!r.annual.length)throw new Error('NASA returned no complete annual observations for this case.');
     resetCase();
     S.evidence={...r,annual:r.annual.map(({year,value})=>[year,value]),retrieved:r.retrieved_at,src:r.source_url};
-    setupPredict();go(3);button.disabled=false;
+    if(r.annual.length){setupPredict();go(3)}else{go(4)}
+    button.disabled=false;
   }catch(e){
     if(S.request===request){note.textContent=e.message;button.disabled=false;S.request=null;}
   }
@@ -333,16 +354,63 @@ function setupPredict(){
   paint();$('#lock').disabled=true;
 }
 
+function dataSourceMode(r){
+  if(r.source_mode==='archive')return 'Saved NASA POWER response';
+  if(r.source_mode==='cache')return 'NASA POWER · cached response';
+  return 'NASA POWER · live query';
+}
+function renderDataDetails(r){
+  const {start,end}=r.settings;
+  const years=r.annual.length;
+  const range=years?years===1?String(r.annual[0][0]):r.annual[0][0]+'–'+r.annual.at(-1)[0]:'None';
+  const products=(r.source_header?.sources||[]).map(source=>source==='MERRA2'?'MERRA-2':source);
+  const fields=[
+    ['Requested coordinates', `${S.city.lat}°, ${S.city.lon}° (one grid cell near the city)`],
+    ['NASA data product', products.join(', ')||'Unspecified in the NASA response'],
+    ['Units', `${ClimateUI.unit(r.source_unit)} (source) → ${ClimateUI.unit(r.unit)} (annual)`],
+    ['Annual aggregation', r.aggregation],
+    ['Requested period', `${start}–${end}`],
+    ['Available years', `${range} · ${years} of ${end-start+1} complete`],
+    ['Data source', dataSourceMode(r)],
+    ['Retrieved (UTC)', r.retrieved],
+  ];
+  $('#dataMeta').replaceChildren(...fields.flatMap(([name,value])=>{
+    const label=document.createElement('dt'), detail=document.createElement('dd');
+    label.textContent=name;detail.textContent=value;
+    return [label,detail];
+  }));
+  $('#dataExclusions').replaceChildren(...ClimateUI.excluded(r.excluded_years).map(message=>{
+    const item=document.createElement('li');item.textContent=message;return item;
+  }));
+  $('#nasaSourceLink').href=r.src;
+  $('#downloadAnnual').hidden=!years;
+  const issue=$('#dataIssue');
+  issue.hidden=!r.analysis_error&&!r.excluded_years.length;
+  issue.textContent=[r.excluded_years.length?`${r.excluded_years.length} year(s) excluded. See Data details for the affected months.`:'',r.analysis_error].filter(Boolean).join(' ');
+}
+$('#downloadAnnual').onclick=()=>{
+  const r=rec(),{variable,start,end}=r.settings;
+  const lines=['year,value,unit',...r.annual.map(([year,value])=>`${year},${value},${r.unit}`)];
+  const url=URL.createObjectURL(new Blob([lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');
+  link.href=url;link.download=`ClimateLens-${S.city.code}-${variable}-${start}-${end}.csv`;
+  link.click();setTimeout(()=>URL.revokeObjectURL(url),4000);
+};
+
 let rainTimer=[];
 function observe(){
   rainTimer.forEach(clearTimeout);rainTimer=[];
-  const r=rec(),sc=scales(r),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
-  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · NASA POWER, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  const r=rec(),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
+  $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · ${dataSourceMode(r)}, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  renderDataDetails(r);
+  svg.hidden=!r.annual.length;
+  $('#toast').textContent='';$('#toVerify').disabled=!!r.annual.length;
+  if(!r.annual.length)return;
+  const sc=scales(r);
   svg.innerHTML=axes(r,sc)+guessPath(sc)+r.annual.map(([yr,v])=>`<circle class="pt" r="6" cx="${sc.x(yr)}" cy="${sc.y(v)}" data-yr="${yr}" data-v="${v}" style="transform:translateY(-${sc.y(v)+40}px);opacity:0"/>`).join('')+`<g id="hl"></g>`;
   const pts=[...svg.querySelectorAll('.pt')];
   pts.forEach((p,i)=>rainTimer.push(setTimeout(()=>{p.style.transform='translateY(0)';p.style.opacity=1},120+i*70)));
   const max=r.annual.reduce((a,b)=>b[1]>a[1]?b:a);
-  $('#toast').textContent='';$('#toVerify').disabled=true;
   rainTimer.push(setTimeout(()=>{$('#toast').textContent=`Detective challenge: which year was the ${S.v.hi}? Click a point.`;$('#toVerify').disabled=false},200+pts.length*70));
   pts.forEach(p=>p.onclick=()=>{
     const yr=+p.dataset.yr,v=+p.dataset.v,hit=yr===max[0];
@@ -358,6 +426,12 @@ function evidenceNumber(stats,value){
 }
 function verify(){
   const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  svg.hidden=!r.annual.length;
+  if(!s){
+    $('#metrics').replaceChildren();
+    $('#plain').textContent=r.analysis_error||'No valid trend inference is available for this record.';
+    if(!r.annual.length)return;
+  }
   const first=r.annual[0][0],last=r.annual.at(-1)[0];
   const xm=r.annual.reduce((a,b)=>a+b[0],0)/r.annual.length,ym=r.annual.reduce((a,b)=>a+b[1],0)/r.annual.length;
   const L=(m,yr)=>ym+m*(yr-xm);
@@ -373,7 +447,7 @@ function verify(){
   }
   svg.innerHTML=body;
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
-  if(!s){$('#metrics').innerHTML='';$('#plain').textContent='No valid trend inference is available for this record. Record the data limitation; do not infer a trend from missing evidence.';return}
+  if(!s)return;
   const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
   $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
   const dir=s.direction==='increasing'?'rises':s.direction==='decreasing'?'falls':'changes';

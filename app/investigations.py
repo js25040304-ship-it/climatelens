@@ -25,19 +25,20 @@ async def investigate(request:Settings):
  except ValueError as e: raise HTTPException(422,str(e))
  url=source_url(s)
  try:
-  if url in CACHE and time.time()-CACHE[url][0]<3600: payload=CACHE[url][1]
+  if url in CACHE and time.time()-CACHE[url][0]<3600:
+   payload=CACHE[url][1]; source_mode='cache'
   else:
    async with httpx.AsyncClient(timeout=45) as client:
     response=await client.get(url); response.raise_for_status(); payload=response.json()
    if len(CACHE)>=100: CACHE.pop(next(iter(CACHE)))
-   CACHE[url]=(time.time(),payload)
+   CACHE[url]=(time.time(),payload); source_mode='live'
   data=normalize(payload,s)
  except (httpx.HTTPError,ValueError,KeyError,TypeError) as e:
   raise HTTPException(503,'Analysis unavailable: NASA could not provide a validated response. Check connectivity, variable and period. '+str(e)[:200])
  error=None
  try: stats=analyze(data['annual'])
  except ValueError as e: stats=None; error=str(e)
- result={'settings':s,**data,'stats':stats,'analysis_error':error,'retrieved_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(CACHE[url][0]))}
+ result={'settings':s,**data,'stats':stats,'analysis_error':error,'source_mode':source_mode,'retrieved_at':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(CACHE[url][0]))}
  if len(RESULTS)>=200: RESULTS.pop(next(iter(RESULTS)))
  identifier=secrets.token_urlsafe(24); RESULTS[identifier]=result
  return {'id':identifier,**result}
