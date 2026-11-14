@@ -130,10 +130,13 @@ def report(w:Report):
   blocks[heading_start:]=[KeepTogether(blocks[heading_start:])]
   para('Each interval describes one city’s trend. To determine whether the trends differ statistically, test the difference between the slopes directly.')
   para('Comparison NASA POWER source: '+comparison['source_url'])
+  if comparison.get('source_mode')=='archive': para('Comparison source mode: saved NASA POWER response.')
   para('Comparison data retrieved: '+comparison['retrieved_at'])
  para('Student-authored conclusion (not endorsed or graded)','Heading2'); para(w.conclusion or 'Not yet written')
  if r:
-  para('NASA POWER source','Heading2'); para(r['source_url']); para('Retrieved: '+r['retrieved_at']); para('Annual aggregation: '+r['aggregation'])
+  para('NASA POWER source','Heading2')
+  if r.get('source_mode')=='archive': para('Source mode: saved NASA POWER response.')
+  para(r['source_url']); para('Retrieved: '+r['retrieved_at']); para('Annual aggregation: '+r['aggregation'])
   para('Excluded years: '+('; '.join(f"{e['year']} (missing or invalid months: {', '.join(map(str,e['missing_or_invalid_months']))})" for e in r['excluded_years']) or 'none'))
   class AnnualTable(Table):  # every piece re-applies the rule (header+3 rows before a break, 3 after); reportlab drops it on split pieces, which let a leftover gap take a lone row
    def split(self,aw,ah): self._rowSplitRange=(4,-3); return Table.split(self,aw,ah)

@@ -74,9 +74,24 @@ class ContractTests(unittest.TestCase):
     def test_upstream_failure_produces_no_result(self):
         import httpx
         with patch('app.investigations.httpx.AsyncClient.get', new=AsyncMock(side_effect=httpx.ConnectError('offline'))):
-            response = self.client.post('/api/investigate', json=SETTINGS)
+            response = self.client.post('/api/investigate', json={**SETTINGS, 'end': 2024})
         self.assertEqual(response.status_code, 503)
         self.assertEqual(RESULTS, {})
+
+    def test_connection_failure_uses_the_verified_humidity_archive(self):
+        import httpx
+        from app.investigations import archived_response
+
+        settings = {**SETTINGS, 'city': 'Kuala Lumpur', 'variable': 'RH2M'}
+        url = source_url(settings)
+        with patch('app.investigations.httpx.AsyncClient.get', new=AsyncMock(side_effect=httpx.ConnectError('offline'))):
+            response = self.client.post('/api/investigate', json=settings)
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result['source_mode'], 'archive')
+        self.assertEqual(result['retrieved_at'], archived_response(url)[1])
+        self.assertEqual(len(result['annual']), 25)
+        self.assertNotIn(url, CACHE)
 
     def test_expired_result(self):
         for endpoint in ['report', 'tutor']:

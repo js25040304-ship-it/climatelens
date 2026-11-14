@@ -503,7 +503,7 @@ $('#compareForm').onsubmit=async event=>{
     }
     comparisonResult=other;
     $('#compareResult').hidden=false;
-    status.textContent=`Compared ${years.length} matching years, ${years[0]}–${years.at(-1)}.`;
+    status.textContent=`Compared ${years.length} matching years, ${years[0]}–${years.at(-1)}. ${primary.settings.city}: ${dataSourceMode(primary)}. ${city}: ${dataSourceMode(other)}.`;
   }catch(error){
     if(comparisonRequest===request)status.textContent=error.message;
   }finally{
