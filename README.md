@@ -14,19 +14,21 @@
 
 | 成员 | 主要责任 | 主要文件 | 首先运行什么 | 交付标准 |
 | --- | --- | --- | --- | --- |
-| 1 号：统筹与集成 | 环境、接口、合并代码、最终演示 | `app/main.py` 中应用入口、请求模型与 investigate 接口；`requirements.txt` | 全量测试 + 启动网站 | 另一台电脑能按 README 启动；默认探究完整走通；汇总实际通过和未通过项 |
+| 1 号：统筹与集成 | 环境、接口、合并代码、最终演示 | `app/main.py`、`app/schemas.py`、`app/investigations.py`、`app/state.py`；`requirements.txt` | 全量测试 + 启动网站 | 另一台电脑能按 README 启动；默认探究完整走通；汇总实际通过和未通过项 |
 | 2 号：NASA 数据 | 请求、单位、缺失值、年度聚合与覆盖验证 | `app/data.py`、`tests/test_data.py` | 数据测试 + 真实 NASA 测试 | 新加坡温度先验证通过，再记录五城市×五变量的可用性；保留来源和原始响应 |
 | 3 号：统计分析 | 斜率、HAC 不确定性、显著性与限制 | `app/analysis.py`、统计相关测试 | 统计测试 | 对照独立计算；解释年/十年单位、置信区间、p 值；不把相关说成因果 |
 | 4 号：前端与学生流程 | 页面、图表、状态、结论编辑、响应式 | `app/static/index.html`、`style.css`、`app.js` | 启动网站，按浏览器清单验收 | 图表与设置一致；修改设置后旧结果失效；结论不被 AI 自动覆盖；手机和键盘可操作 |
-| 5 号：AI、PDF 与演示材料 | AI 反馈、无密钥降级、PDF、演示脚本 | `app/main.py` 中 tutor/report 及相关函数；对应测试 | AI/PDF 测试 + 配置可选密钥 | 无密钥也可探究；API 失败能降级；中英文长结论 PDF 可读；不遗漏来源与局限 |
+| 5 号：AI、PDF 与演示材料 | AI 反馈、无密钥降级、PDF、演示脚本 | `app/tutor.py`、`app/reports.py`、`app/evidence.py`；对应测试 | AI/PDF 测试 + 配置可选密钥 | 无密钥也可探究；API 失败能降级；中英文长结论 PDF 可读；不遗漏来源与局限 |
 
-**避免冲突：1 号和 5 号目前都会碰 `app/main.py`。** 1 号负责入口、请求模型、investigate；5 号负责 tutor、explanation、report。改公共模型前先沟通。需要大改时，由 1 号先拆成独立模块、合并后其他人再拉取，不要各自同时拆文件。
+**模块已拆开：** 1 号（莺心）负责入口、接口模型、探究路由与结果存储；5 号负责 `tutor.py`、`reports.py`、`evidence.py`。2、3、4 号原有文件路径保持不变。公共字段以 `app/schemas.py` 和 `/docs` 为准，改字段或返回结构前先找 1 号协调。不要各自复制一套结果存储。
+
+1 号本次工作分支：`feat/integration`。模块拆分在合并到 main 之前，其他同学不要直接从旧版 main 修改 AI/PDF 所在的 main.py；可先做自己模块的测试。
 
 ## 2. 获取代码与组员访问
 
 仓库： https://github.com/js25040304-ship-it/climatelens
 
-仓库为私有时，只有所有者与获授权成员能查看。所有者在仓库 **Settings → Collaborators → Add people** 添加组员的 GitHub 用户名；组员接受邀请后再克隆。仅转发私有仓库链接不会自动开放访问。需要写代码的组员要有写入权限。
+仓库目前公开，任何人都能查看和克隆；直接推送分支仍需协作者权限。仓库为私有时，只有所有者与获授权成员能查看。所有者在仓库 **Settings → Collaborators → Add people** 添加组员的 GitHub 用户名；组员接受邀请后再克隆。仅转发私有仓库链接不会自动开放访问。需要写代码的组员要有写入权限。
 
 ```sh
 git clone https://github.com/js25040304-ship-it/climatelens.git
@@ -82,7 +84,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ### 1 号：先跑全量，再做集成
 
 ```sh
-python -m unittest discover -s tests -v
+python scripts/verify.py
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -157,6 +159,19 @@ LLM_MODEL=填写你有权限使用的模型名称
 
 模型名按实际账户权限选择；修改 `.env` 后重启服务。外部 AI 请求可能产生提供商费用；无密钥模式不调用模型。
 
+**`max_tokens` 与 `max_completion_tokens`：** 有些提供商或新模型（例如 OpenAI 的推理模型）会拒绝 `max_tokens`，要求改用 `max_completion_tokens`；有些模型还不接受 `temperature`。另一方面，部分兼容服务不认识 `max_completion_tokens`。因此用 `.env` 中的 `LLM_TOKEN_PARAM` 控制：
+
+| `LLM_TOKEN_PARAM` | 行为 |
+| --- | --- |
+| 留空（默认，自动） | 先发送 `max_tokens`。如果提供商返回 400，且错误信息明确提到 `max_tokens`，就改用 `max_completion_tokens`、去掉 `temperature`，**只重试一次**。 |
+| `max_tokens` 或 `max_completion_tokens`（手动） | 始终使用该参数，**不会自动切换**。 |
+
+无论哪种设置，只要 400 错误信息明确提到 `temperature`，都会去掉 `temperature` 重试一次。其他 400、401/403、429、5xx、超时、非 JSON、内容为空或格式异常都不重试，直接降级为确定性反馈。返回里的 `reason` 字段会说明原因：`no_key` / `timeout` / `auth` / `http_error` / `bad_response`。服务器日志打印一行 `AI tutor fallback: reason=… error=<异常类型> status=<状态码>`，不会记录密钥和提供商返回的正文。以上行为都用 mock 测过（`tests/test_tutor_report.py`），**还没有用真实提供商验证**；哪些模型需要哪个参数，以提供商当前文档为准。
+
+**提示注入：** 学生文字只放在发给模型的 JSON 字段 `untrusted_student_text` 里，不进入系统提示词。系统提示词要求模型不执行学生文字中的任何指令、不宣称结论正确或已评分、不替学生写结论，并用学生使用的语言回复。确定性反馈不读取学生文字中的指令，测试证明注入文本得到的反馈与普通文本完全相同。mock 测试只能证明我们的代码做了隔离，不能证明真实模型一定遵守。
+
+**PDF 自查：** 图表纵轴用可读刻度（如 `2,400`），带变量名和单位；横轴写 Year。英文用 Helvetica；中文和全角字符用仓库自带的 Noto Sans SC Regular（`app/fonts/`，SIL OFL 1.1），按子集嵌入 PDF，没有中文字体的阅读器（例如部分手机）也能显示。不要换回不嵌入的 STSong-Light：在微信里打开时，中文会全部消失。自动测试只检查内容；排版需要把 PDF 转成图片逐页查看。演示步骤见 [`docs/demo-script.md`](docs/demo-script.md)。
+
 验证成功响应、超时、无效密钥、提供商错误都不会破坏数据分析；反馈围绕事实、证据、统计推理、谨慎表达与独立思考。现阶段 AI 输出仍需人工核对，不能宣称绝不会幻觉。问题解析目前是关键词规则，不是 LLM 解析。
 
 PDF 至少测三份：完整探究、未写结论、没有有效证据。再测长段中文/英文和 `< > &` 字符。逐页打开检查图表、轴标签、来源 URL、分页、结论是否完整；PDF 文件头正确不代表排版正确。反馈质量或学生是否接受建议都不能阻止导出。
@@ -224,3 +239,12 @@ git push -u origin feat/nasa-data
 4. 每人把验证记录写进自己的 PR，由 1 号汇总最终结果。
 
 最终演示必须证明：真实数据可加载、图表与统计对应、局限解释正确、学生能自己写结论、报告实际可下载。不能把跳过的测试说成通过，不能把测试合成数据当作 NASA 历史数据。
+
+
+## 9. 集成检查（1 号维护）
+
+`python scripts/verify.py` 先检查实际可导入的依赖，再运行全部测试。缺依赖会以非零状态退出，不能靠跳过集成测试获得绿色结果。默认仅允许真实 NASA 测试跳过；开启 `RUN_LIVE_NASA=1` 后该测试也必须执行。
+
+GitHub Actions 配置在 `.github/workflows/ci.yml`：每次 PR 和 main 更新运行离线集成测试及独立的真实 NASA 检查。离线测试的 NASA 响应是明确标注的合成夹具，仅用于测试；真实 NASA 检查失败不能用合成数据替代。`scripts/smoke.py` 检查实际 HTTP 服务、页面资源、OpenAPI 与无证据 PDF 下载，不代替浏览器交互或 PDF 视觉检查。
+
+本地环境仍受网络与依赖限制。Actions 配置的存在不代表已经运行通过，是否通过以对应提交的 Checks 为准；浏览器完整体验、PDF 逐页排版和真实外部 AI 仍需人工验收。我们没有配置网站自动部署或分支保护。
