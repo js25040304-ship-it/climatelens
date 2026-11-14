@@ -1,4 +1,5 @@
 """Owner 1: catalog, question and investigation integration routes."""
+import asyncio
 import hashlib
 import json
 import secrets
@@ -19,7 +20,10 @@ ARCHIVE_DIR = Path(__file__).resolve().parents[1] / 'evidence/nasa-data/20261114
 
 @lru_cache(maxsize=1)
 def archive_index():
-    rows = json.loads((ARCHIVE_DIR / 'coverage.json').read_text(encoding='utf-8'))
+    try:
+        rows = json.loads((ARCHIVE_DIR / 'coverage.json').read_text(encoding='utf-8'))
+    except FileNotFoundError:
+        return {}
     return {row['source_url']: row for row in rows if row['success']}
 
 
@@ -55,11 +59,18 @@ async def investigate(request:Settings):
    data=normalize(payload,s)
    source_mode='cache'
   else:
+   # Bound the full live attempt when this exact case has a verified archive.
+   budget=12 if url in archive_index() else 45
    try:
-    async with httpx.AsyncClient(timeout=45) as client:
-     response=await client.get(url)
-    response.raise_for_status()
-   except (httpx.RequestError,ImportError):
+    async with asyncio.timeout(budget):
+     async with httpx.AsyncClient(timeout=budget) as client:
+      response=await client.get(url)
+     response.raise_for_status()
+   except (httpx.RequestError,httpx.HTTPStatusError,ImportError,TimeoutError) as upstream:
+    if isinstance(upstream,httpx.HTTPStatusError):
+     status=upstream.response.status_code
+     if status!=429 and not 500<=status<600:
+      raise
     payload,retrieved_at=archived_response(url)
     data=normalize(payload,s)
     source_mode='archive'

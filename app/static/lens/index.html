@@ -162,7 +162,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <div class="stage card">
     <div class="eyebrow">03 / Predict</div>
     <h2>Before you look, <em>draw your guess</em>.</h2>
-    <p class="small">Drag across the chart from left to right. There is no wrong guess; it's what makes the evidence interesting.</p>
+    <p class="small">Drag from left to right to predict an overall rise, fall, or roughly steady pattern. Choose “Skip, just show me” to go straight to the data.</p>
     <svg class="chart" id="predictSvg" viewBox="0 0 900 380" aria-label="Empty chart for drawing a prediction"></svg>
     <div class="row"><button class="btn" id="lock" disabled>Lock in my prediction →</button><button class="btn ghost" id="skipPredict">Skip, just show me</button><button class="btn ghost" id="redraw">Redraw</button></div>
   </div>
@@ -174,6 +174,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <div class="eyebrow">04 / Observe</div>
     <h2 id="obsTitle">Let the pattern <em>unfold</em>.</h2>
     <p class="small" id="obsSub"></p>
+    <p class="note" id="observeArchive" hidden></p>
     <svg class="chart" id="obsSvg" viewBox="0 0 900 380" aria-label="Annual observations"></svg>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <p class="note" id="dataIssue" hidden></p>
@@ -195,6 +196,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <div class="stage card">
     <div class="eyebrow">05 / Verify</div>
     <h2>A pattern. But <em>how strong</em>?</h2>
+    <p class="note" id="verifyArchive" hidden></p>
     <svg class="chart" id="verSvg" viewBox="0 0 900 380" aria-label="Observations with trend line and slope uncertainty"></svg>
     <div class="metrics" id="metrics"></div>
     <p class="plain" id="plain"></p>
@@ -231,7 +233,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
       </div>
       <div>
         <label class="small" for="concl">What can you reasonably conclude, and what remains uncertain?</label>
-        <textarea id="concl" rows="7" style="font-size:18px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;margin-top:8px" placeholder="The data show… I am uncertain about… This cannot tell us…"></textarea>
+        <textarea id="concl" rows="7" style="font-size:18px;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;margin-top:8px" placeholder="My prediction was…&#10;The data show…&#10;One limitation is…"></textarea>
         <p class="small" id="closeHint">Write at least one full sentence to close the case.</p>
         <div class="row"><button class="btn" id="close" disabled>Close the case ✓</button><span class="stamp" id="stamp">Case investigated</span></div>
         <p class="small" id="reviewHint" hidden>Tick ‘I have reviewed the evidence’ on the Verify step for a complete report.</p>
@@ -380,6 +382,11 @@ function dataSourceMode(r){
   if(r.source_mode==='cache')return 'NASA POWER · cached response';
   return 'NASA POWER · live query';
 }
+function showArchiveNotice(selector,r){
+  const notice=$(selector);
+  notice.hidden=r.source_mode!=='archive';
+  notice.textContent=notice.hidden?'':`Using saved NASA POWER data. Originally retrieved on ${r.retrieved.slice(0,10)} (UTC).`;
+}
 function renderDataDetails(r){
   const {start,end}=r.settings;
   const years=r.annual.length;
@@ -423,6 +430,7 @@ function observe(){
   rainTimer.forEach(clearTimeout);rainTimer=[];
   const r=rec(),svg=$('#obsSvg'),u=UNIT[r.unit]||r.unit;
   $('#obsSub').textContent=`${S.city.name} · ${S.v.label} · ${dataSourceMode(r)}, ${r.annual.length} complete years · retrieved ${r.retrieved.slice(0,10)}. ${S.guess?'Your guess is the dashed orange line.':''}`;
+  showArchiveNotice('#observeArchive',r);
   renderDataDetails(r);
   svg.hidden=!r.annual.length;
   $('#toast').textContent='';$('#toVerify').disabled=!!r.annual.length;
@@ -436,7 +444,7 @@ function observe(){
   pts.forEach(p=>p.onclick=()=>{
     const yr=+p.dataset.yr,v=+p.dataset.v,hit=yr===max[0];
     $('#hl').innerHTML=`<circle r="11" cx="${sc.x(yr)}" cy="${sc.y(v)}" fill="none" stroke="${hit?'#e0832f':'#9fb0a6'}" stroke-width="2.5"/><text class="callout" x="${Math.min(sc.x(yr),W-150)}" y="${sc.y(v)-18}">${yr}: ${fmt(v)} ${u}</text>`;
-    $('#toast').textContent=hit?`Found it: ${yr} was the ${S.v.hi} year in this record (${fmt(v)} ${u}). One year is not a trend; let's test the whole record.`:`${yr}: ${fmt(v)} ${u}. Not the ${S.v.hi} year yet. Keep looking.`;
+    $('#toast').textContent=hit?`Found it: ${yr} was the ${S.v.hi} year in this record (${fmt(v)} ${u}). Does the highest year tell you the long-term direction? Continue to Verify to check the fitted trend.`:`${yr}: ${fmt(v)} ${u}. Not the ${S.v.hi} year yet. Keep looking.`;
     if(hit)S.found=yr;
   });
 }
@@ -515,6 +523,7 @@ $('#compareForm').onsubmit=async event=>{
 };
 function verify(){
   const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  showArchiveNotice('#verifyArchive',r);
   $('#cityComparison').hidden=!s;
   if(s&&!$('#compareCity').options.length){
     $('#compareScope').textContent=`${S.v.label} · ${r.settings.start}–${r.settings.end} · NASA POWER`;
@@ -545,12 +554,19 @@ function verify(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
   if(!s)return;
   const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
-  $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
-  const dir=s.direction==='increasing'?'rises':s.direction==='decreasing'?'falls':'changes';
-  let txt=`Over ${s.n} years, the fitted line ${dir} by about ${evidenceNumber(s,Math.abs(s.slope_decade))} ${u} per decade. `;
-  txt+=s.significant?`The interval excludes zero, so this is evidence of a ${s.direction==='increasing'?'rise':'decline'} at the 0.05 level. `:`The interval includes zero, so the data cannot distinguish this slope from no linear change. That is not proof of no change. `;
-  txt+=`It describes a pattern in observational data; it cannot tell us what caused it.`;
-  if(S.guess){const gs=(S.guess[2025]-S.guess[2001])/24*10;const same=Math.sign(gs)===Math.sign(s.slope_decade)&&Math.abs(gs)>1e-9;txt+=` Your guess ${gs>0?'rose':'fell'} about ${fmt(Math.abs(gs))} ${u} per decade${same?', the same direction as the data.':', a different direction from the data. Interesting: what made you expect that?'}`}
+  const rateUnit=r.unit==='%'?'percentage points':u;
+  const signedSlope=(s.slope_decade>0?'+':'')+evidenceNumber(s,s.slope_decade);
+  $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${signedSlope} ${rateUnit}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
+  let txt=`Across ${s.n} years, the fitted trend is ${signedSlope} ${rateUnit} per decade. The 95% confidence interval runs from ${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)} ${rateUnit} per decade. `;
+  txt+=lo<=0&&hi>=0
+    ? 'The interval includes zero, so these data leave the direction of change uncertain. '
+    : `The interval stays ${lo>0?'above':'below'} zero, which supports an overall ${lo>0?'increase':'decrease'} during this period. `;
+  txt+='Use the result to describe what changed. Identifying the cause requires other evidence.';
+  if(S.guess){
+    const guessSlope=(S.guess[2025]-S.guess[2001])/2.4;
+    const guessDirection=Math.abs(guessSlope)<1e-9?'roughly steady':guessSlope>0?'an increase':'a decrease';
+    txt+=` Your prediction showed ${guessDirection}. How does that compare with the evidence?`;
+  }
   $('#plain').textContent=txt;
 }
 function caseFile(){

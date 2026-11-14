@@ -84,14 +84,28 @@ class ContractTests(unittest.TestCase):
 
         settings = {**SETTINGS, 'city': 'Kuala Lumpur', 'variable': 'RH2M'}
         url = source_url(settings)
-        with patch('app.investigations.httpx.AsyncClient.get', new=AsyncMock(side_effect=httpx.ConnectError('offline'))):
-            response = self.client.post('/api/investigate', json=settings)
-        self.assertEqual(response.status_code, 200, response.text)
-        result = response.json()
-        self.assertEqual(result['source_mode'], 'archive')
-        self.assertEqual(result['retrieved_at'], archived_response(url)[1])
-        self.assertEqual(len(result['annual']), 25)
-        self.assertNotIn(url, CACHE)
+        failures = (
+            httpx.ConnectError('offline'),
+            httpx.ReadTimeout('slow upstream'),
+            TimeoutError('request deadline'),
+            429, 500, 502, 503, 504,
+        )
+        for failure in failures:
+            with self.subTest(failure=failure):
+                mock = (AsyncMock(return_value=httpx.Response(failure, request=httpx.Request('GET', url)))
+                        if isinstance(failure, int) else AsyncMock(side_effect=failure))
+                with patch('app.investigations.httpx.AsyncClient.get', new=mock):
+                    response = self.client.post('/api/investigate', json=settings)
+                self.assertEqual(response.status_code, 200, response.text)
+                result = response.json()
+                self.assertEqual(result['source_mode'], 'archive')
+                self.assertEqual(result['retrieved_at'], archived_response(url)[1])
+                self.assertEqual(len(result['annual']), 25)
+                self.assertNotIn(url, CACHE)
+
+        rejected = httpx.Response(404, request=httpx.Request('GET', url))
+        with patch('app.investigations.httpx.AsyncClient.get', new=AsyncMock(return_value=rejected)):
+            self.assertEqual(self.client.post('/api/investigate', json=settings).status_code, 503)
 
     def test_expired_result(self):
         for endpoint in ['report', 'tutor']:
