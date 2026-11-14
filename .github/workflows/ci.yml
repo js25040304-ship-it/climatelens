@@ -61,7 +61,7 @@ jobs:
           python scripts/smoke.py
           python scripts/verify_browser.py
       - name: Verify detective cases and downloaded PDF evidence
-        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.head_ref == 'feat/data-details' || github.event_name == 'push'
         env:
           LLM_API_KEY: ''
         run: |

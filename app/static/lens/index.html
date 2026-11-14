@@ -445,10 +445,11 @@ function evidenceNumber(stats,value){
   const digits=largest?Math.max(0,2-Math.floor(Math.log10(largest))):0;
   return (value+0).toLocaleString('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits});
 }
-let comparisonRequest;
+let comparisonRequest, comparisonResult;
 function clearComparison(){
   comparisonRequest?.abort();
   comparisonRequest=null;
+  comparisonResult=null;
   $('#compareRun').disabled=false;
   $('#compareStatus').textContent='';
   $('#compareResult').hidden=true;
@@ -500,6 +501,7 @@ $('#compareForm').onsubmit=async event=>{
       });
       $('#compareRows').append(row);
     }
+    comparisonResult=other;
     $('#compareResult').hidden=false;
     status.textContent=`Compared ${years.length} matching years, ${years[0]}–${years.at(-1)}.`;
   }catch(error){
@@ -565,6 +567,7 @@ $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;
   try{
     const r=rec(),u=UNIT[r.unit]||r.unit,fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
     const body={result_id:r.id,settings:r.settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
+    if(comparisonResult)body.comparison_result_id=comparisonResult.id;
     const rep=await api('report',body);
     if(rec()!==r)return;
     if(!rep.headers.get('content-type')?.includes('application/pdf'))throw new Error('The server did not return a PDF.');

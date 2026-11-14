@@ -53,6 +53,24 @@ class ContractTests(unittest.TestCase):
         self.assertTrue(pdf.content.startswith(b'%PDF-'))
         self.assertEqual(RESULTS[result['id']]['stats'], result['stats'])
 
+    def test_report_comparison_requires_matching_evidence(self):
+        other_settings = {**SETTINGS, 'city': 'Bangkok'}
+        for settings in (SETTINGS, other_settings):
+            CACHE[source_url(settings)] = (time.time(), synthetic_response())
+        primary = self.client.post('/api/investigate', json=SETTINGS).json()
+        secondary = self.client.post('/api/investigate', json=other_settings).json()
+        body = {'settings': SETTINGS, 'result_id': primary['id'], 'comparison_result_id': secondary['id']}
+        self.assertEqual(self.client.post('/api/report', json=body).status_code, 200)
+
+        invalid = self.client.post('/api/report', json={**body, 'comparison_result_id': primary['id']})
+        self.assertEqual(invalid.status_code, 409)
+        RESULTS[secondary['id']]['annual'] = secondary['annual'][1:]
+        mismatch = self.client.post('/api/report', json=body)
+        self.assertEqual(mismatch.status_code, 409)
+        self.assertIn('same complete years', mismatch.json()['detail'])
+        RESULTS.pop(secondary['id'])
+        self.assertEqual(self.client.post('/api/report', json=body).status_code, 410)
+
     def test_upstream_failure_produces_no_result(self):
         import httpx
         with patch('app.investigations.httpx.AsyncClient.get', new=AsyncMock(side_effect=httpx.ConnectError('offline'))):
