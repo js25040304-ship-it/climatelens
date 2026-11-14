@@ -59,6 +59,18 @@ with sync_playwright() as playwright:
         if city == "Singapore":
             page.get_by_text("Compare with another city", exact=True).click()
             page.locator("#compareCity").select_option("Bangkok")
+            def respond_with_missing_year(route):
+                route.fulfill(json={
+                    **result,
+                    "settings": {**result["settings"], "city": "Bangkok"},
+                    "annual": result["annual"][1:],
+                })
+
+            page.route("**/api/investigate", respond_with_missing_year)
+            page.locator("#compareRun").click()
+            expect(page.locator("#compareStatus")).to_contain_text("different complete years")
+            expect(page.locator("#compareResult")).to_be_hidden()
+            page.unroute("**/api/investigate", respond_with_missing_year)
             with page.expect_response(lambda response: response.url.endswith("/api/investigate"), timeout=75000) as secondary:
                 page.locator("#compareRun").click()
             assert secondary.value.ok
@@ -83,7 +95,7 @@ with sync_playwright() as playwright:
         assert report.value.request.post_data_json.get("comparison_result_id") == (
             comparison["id"] if comparison else None
         )
-        assert sum(url.endswith("/api/investigate") for url in requests) == (2 if comparison else 1), requests
+        assert sum(url.endswith("/api/investigate") for url in requests) == (3 if comparison else 1), requests
         pdf = download.value.path().read_bytes()
         assert pdf.startswith(b"%PDF-") and b"/FontFile2" in pdf
         extracted = " ".join(
