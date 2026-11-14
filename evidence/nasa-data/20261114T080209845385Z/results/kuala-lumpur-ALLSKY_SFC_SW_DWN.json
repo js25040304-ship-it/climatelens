@@ -1,0 +1,180 @@
+{
+  "id": "BU1goQhKEmbsvsDzjybLofyJZQtCK4rL",
+  "settings": {
+    "city": "Kuala Lumpur",
+    "variable": "ALLSKY_SFC_SW_DWN",
+    "start": 2001,
+    "end": 2025
+  },
+  "annual": [
+    {
+      "year": 2001,
+      "value": 4.798195890410959
+    },
+    {
+      "year": 2002,
+      "value": 4.911890958904109
+    },
+    {
+      "year": 2003,
+      "value": 4.712012876712328
+    },
+    {
+      "year": 2004,
+      "value": 4.858849180327868
+    },
+    {
+      "year": 2005,
+      "value": 4.844892876712329
+    },
+    {
+      "year": 2006,
+      "value": 4.646403287671233
+    },
+    {
+      "year": 2007,
+      "value": 4.6807849315068495
+    },
+    {
+      "year": 2008,
+      "value": 4.689484699453552
+    },
+    {
+      "year": 2009,
+      "value": 4.758370410958904
+    },
+    {
+      "year": 2010,
+      "value": 4.88413506849315
+    },
+    {
+      "year": 2011,
+      "value": 4.620631780821918
+    },
+    {
+      "year": 2012,
+      "value": 4.811228688524591
+    },
+    {
+      "year": 2013,
+      "value": 4.8048128767123295
+    },
+    {
+      "year": 2014,
+      "value": 4.807133698630136
+    },
+    {
+      "year": 2015,
+      "value": 4.725482191780823
+    },
+    {
+      "year": 2016,
+      "value": 5.055979508196722
+    },
+    {
+      "year": 2017,
+      "value": 4.73520602739726
+    },
+    {
+      "year": 2018,
+      "value": 4.871786027397261
+    },
+    {
+      "year": 2019,
+      "value": 4.886049863013699
+    },
+    {
+      "year": 2020,
+      "value": 4.865526502732241
+    },
+    {
+      "year": 2021,
+      "value": 4.916179178082192
+    },
+    {
+      "year": 2022,
+      "value": 4.720593424657534
+    },
+    {
+      "year": 2023,
+      "value": 4.6984046575342475
+    },
+    {
+      "year": 2024,
+      "value": 4.7304133879781425
+    },
+    {
+      "year": 2025,
+      "value": 4.723396712328768
+    }
+  ],
+  "excluded_years": [],
+  "source_unit": "kW-hr/m^2/day",
+  "unit": "kW-hr/m^2/day",
+  "aggregation": "Day-weighted mean daily energy",
+  "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=ALLSKY_SFC_SW_DWN&community=RE&latitude=3.139&longitude=101.6869&start=2001&end=2025&format=JSON",
+  "source_header": {
+    "title": "NASA/POWER Source Native Resolution Monthly and Annual",
+    "api": {
+      "version": "v2.10.0",
+      "name": "POWER Monthly and Annual API"
+    },
+    "sources": [
+      "SYN1DEG"
+    ],
+    "fill_value": -999.0,
+    "time_standard": "LST",
+    "start": "20010101",
+    "end": "20251231"
+  },
+  "stats": {
+    "n": 25,
+    "slope_year": 0.000462694886190205,
+    "slope_decade": 0.00462694886190205,
+    "ci95_year": [
+      -0.005393855679796347,
+      0.006319245452176757
+    ],
+    "p_value": 0.8716046247390042,
+    "significant": false,
+    "direction": "increasing",
+    "hac_lags": 2,
+    "fitted": [
+      4.784761449643283,
+      4.785224144529473,
+      4.785686839415663,
+      4.786149534301853,
+      4.7866122291880435,
+      4.7870749240742345,
+      4.787537618960425,
+      4.788000313846615,
+      4.788463008732805,
+      4.788925703618995,
+      4.789388398505185,
+      4.789851093391375,
+      4.790313788277565,
+      4.790776483163755,
+      4.791239178049946,
+      4.7917018729361365,
+      4.792164567822327,
+      4.792627262708517,
+      4.793089957594707,
+      4.793552652480897,
+      4.794015347367087,
+      4.794478042253277,
+      4.794940737139467,
+      4.795403432025658,
+      4.795866126911848
+    ],
+    "method": "OLS with Bartlett Newey-West HAC covariance, 2 annual lags, finite-sample correction and approximate t inference (df=23).",
+    "limitations": [
+      "Gridded NASA POWER data describe a grid cell, not a city-wide station average.",
+      "A linear trend is a summary of this selected period, not a forecast or causal explanation.",
+      "HAC uncertainty is approximate with a short annual series; structural breaks and lag choice can affect inference.",
+      "Repeatedly selecting periods or variables may increase false-positive findings.",
+      "Non-significance does not prove absence of change."
+    ]
+  },
+  "analysis_error": null,
+  "retrieved_at": "2026-11-14T08:02:38Z"
+}

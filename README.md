@@ -92,6 +92,8 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 ### 2 号：数据校验与真实接口
 
+本次数据修复、真实覆盖快照与复现命令见 [NASA 数据验证交接](docs/nasa-data-validation.md)。覆盖是带时间的验证记录，不能保证未来响应始终可用。
+
 离线数据测试（全部是明确标记的合成测试数据）：
 
 ```sh

@@ -1,0 +1,180 @@
+{
+  "id": "sNMXtnm4y363_KF335thIfolSFZRapCS",
+  "settings": {
+    "city": "Ho Chi Minh City",
+    "variable": "PRECTOTCORR",
+    "start": 2001,
+    "end": 2025
+  },
+  "annual": [
+    {
+      "year": 2001,
+      "value": 1438.7100000000003
+    },
+    {
+      "year": 2002,
+      "value": 1193.9099999999999
+    },
+    {
+      "year": 2003,
+      "value": 1302.0700000000002
+    },
+    {
+      "year": 2004,
+      "value": 1426.0300000000002
+    },
+    {
+      "year": 2005,
+      "value": 1315.51
+    },
+    {
+      "year": 2006,
+      "value": 1379.1299999999999
+    },
+    {
+      "year": 2007,
+      "value": 1670.32
+    },
+    {
+      "year": 2008,
+      "value": 1439.7299999999998
+    },
+    {
+      "year": 2009,
+      "value": 1413.62
+    },
+    {
+      "year": 2010,
+      "value": 1533.43
+    },
+    {
+      "year": 2011,
+      "value": 1457.87
+    },
+    {
+      "year": 2012,
+      "value": 1617.8999999999999
+    },
+    {
+      "year": 2013,
+      "value": 1012.3300000000002
+    },
+    {
+      "year": 2014,
+      "value": 1071.1399999999999
+    },
+    {
+      "year": 2015,
+      "value": 981.2
+    },
+    {
+      "year": 2016,
+      "value": 1212.23
+    },
+    {
+      "year": 2017,
+      "value": 1202.97
+    },
+    {
+      "year": 2018,
+      "value": 1396.01
+    },
+    {
+      "year": 2019,
+      "value": 1389.0600000000002
+    },
+    {
+      "year": 2020,
+      "value": 1999.5600000000002
+    },
+    {
+      "year": 2021,
+      "value": 1848.5399999999997
+    },
+    {
+      "year": 2022,
+      "value": 1867.03
+    },
+    {
+      "year": 2023,
+      "value": 1509.25
+    },
+    {
+      "year": 2024,
+      "value": 1596.0
+    },
+    {
+      "year": 2025,
+      "value": 1678.5700000000002
+    }
+  ],
+  "excluded_years": [],
+  "source_unit": "mm/day",
+  "unit": "mm/year",
+  "aggregation": "Monthly daily rate multiplied by days, then summed",
+  "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=PRECTOTCORR&community=RE&latitude=10.8231&longitude=106.6297&start=2001&end=2025&format=JSON",
+  "source_header": {
+    "title": "NASA/POWER Source Native Resolution Monthly and Annual",
+    "api": {
+      "version": "v2.10.0",
+      "name": "POWER Monthly and Annual API"
+    },
+    "sources": [
+      "MERRA2"
+    ],
+    "fill_value": -999.0,
+    "time_standard": "LST",
+    "start": "20010101",
+    "end": "20251231"
+  },
+  "stats": {
+    "n": 25,
+    "slope_year": 12.874538461538432,
+    "slope_decade": 128.74538461538432,
+    "ci95_year": [
+      -0.08507104824141543,
+      25.83414797131828
+    ],
+    "p_value": 0.051400218671644085,
+    "significant": false,
+    "direction": "increasing",
+    "hac_lags": 2,
+    "fitted": [
+      1283.5903384615387,
+      1296.464876923077,
+      1309.3394153846157,
+      1322.213953846154,
+      1335.0884923076924,
+      1347.963030769231,
+      1360.8375692307693,
+      1373.7121076923077,
+      1386.5866461538462,
+      1399.4611846153846,
+      1412.3357230769232,
+      1425.2102615384615,
+      1438.0847999999999,
+      1450.9593384615384,
+      1463.8338769230768,
+      1476.7084153846151,
+      1489.5829538461537,
+      1502.457492307692,
+      1515.3320307692306,
+      1528.206569230769,
+      1541.0811076923073,
+      1553.955646153846,
+      1566.8301846153843,
+      1579.7047230769226,
+      1592.5792615384612
+    ],
+    "method": "OLS with Bartlett Newey-West HAC covariance, 2 annual lags, finite-sample correction and approximate t inference (df=23).",
+    "limitations": [
+      "Gridded NASA POWER data describe a grid cell, not a city-wide station average.",
+      "A linear trend is a summary of this selected period, not a forecast or causal explanation.",
+      "HAC uncertainty is approximate with a short annual series; structural breaks and lag choice can affect inference.",
+      "Repeatedly selecting periods or variables may increase false-positive findings.",
+      "Non-significance does not prove absence of change."
+    ]
+  },
+  "analysis_error": null,
+  "retrieved_at": "2026-11-14T08:03:00Z"
+}

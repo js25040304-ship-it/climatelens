@@ -1,0 +1,37 @@
+test_all_missing_months_reported (test_data.DataBoundaryTests.test_all_missing_months_reported) ... ok
+test_custom_fill_excludes_entire_year (test_data.DataBoundaryTests.test_custom_fill_excludes_entire_year) ... ok
+test_humidity_endpoints_and_calm_wind (test_data.DataBoundaryTests.test_humidity_endpoints_and_calm_wind) ... ok
+test_input_is_not_modified (test_data.DataBoundaryTests.test_input_is_not_modified) ... ok
+test_leap_day_weighted_mean (test_data.DataBoundaryTests.test_leap_day_weighted_mean) ... ok
+test_malformed_payload_is_validation_error (test_data.DataBoundaryTests.test_malformed_payload_is_validation_error) ... ok
+test_normalize_validates_settings (test_data.DataBoundaryTests.test_normalize_validates_settings) ... ok
+test_requested_window_only_and_sorted (test_data.DataBoundaryTests.test_requested_window_only_and_sorted) ... ok
+test_solar_is_daily_mean_not_annual_total (test_data.DataBoundaryTests.test_solar_is_daily_mean_not_annual_total) ... ok
+test_all_units (test_data.DataTests.test_all_units) ... ok
+test_annual_13_ignored (test_data.DataTests.test_annual_13_ignored) ... ok
+test_complete_mean (test_data.DataTests.test_complete_mean) ... ok
+test_day_weighting (test_data.DataTests.test_day_weighting) ... ok
+test_humidity_bounds (test_data.DataTests.test_humidity_bounds) ... ok
+test_invalid_settings (test_data.DataTests.test_invalid_settings) ... ok
+test_invalid_values (test_data.DataTests.test_invalid_values) ... ok
+test_leap_precipitation (test_data.DataTests.test_leap_precipitation) ... ok
+test_missing_year_excluded (test_data.DataTests.test_missing_year_excluded) ... ok
+test_nonnegative_variables (test_data.DataTests.test_nonnegative_variables) ... ok
+test_source (test_data.DataTests.test_source) ... ok
+test_wrong_units (test_data.DataTests.test_wrong_units) ... ok
+test_malformed_and_unverified_upstream_responses (test_data_api.DataAPITests.test_malformed_and_unverified_upstream_responses) ... C:\Users\GWY\Documents\Codex\2026-11-14\new-chat\climatelens\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+ok
+test_gap_and_insufficient (test_integration.IntegrationTests.test_gap_and_insufficient) ... ok
+test_interpret_ambiguity (test_integration.IntegrationTests.test_interpret_ambiguity) ... ok
+test_live_singapore (test_integration.IntegrationTests.test_live_singapore) ... ok
+test_no_key_fallback (test_integration.IntegrationTests.test_no_key_fallback) ... ok
+test_pdf_incomplete_and_escaping (test_integration.IntegrationTests.test_pdf_incomplete_and_escaping) ... ok
+test_scientific_direction_and_uncertainty (test_integration.IntegrationTests.test_scientific_direction_and_uncertainty) ... ok
+test_settings_mismatch (test_integration.IntegrationTests.test_settings_mismatch) ... ok
+test_stable_nonsignificant (test_integration.IntegrationTests.test_stable_nonsignificant) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 4.241s
+
+OK
