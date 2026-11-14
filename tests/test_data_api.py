@@ -9,7 +9,9 @@ class DataAPITests(unittest.TestCase):
     def test_malformed_and_unverified_upstream_responses(self):
         import httpx
         from fastapi.testclient import TestClient
-        from app.main import app, CACHE
+        from app.main import app
+        from app.state import CACHE
+        self.addCleanup(CACHE.clear)
         original_client = httpx.AsyncClient
         settings = dict(city='Singapore', variable='T2M', start=2001, end=2025)
         for payload in [[], {'parameters': None},
@@ -21,7 +23,7 @@ class DataAPITests(unittest.TestCase):
                 transport = httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
                 def factory(*args, **kwargs):
                     return original_client(*args, transport=transport, **kwargs)
-                with TestClient(app) as client, patch('app.main.httpx.AsyncClient', factory):
+                with TestClient(app) as client, patch('app.investigations.httpx.AsyncClient', factory):
                     response = client.post('/api/investigate', json=settings)
                 self.assertEqual(response.status_code, 503, response.text)
                 self.assertIn('NASA could not provide a validated response', response.json()['detail'])

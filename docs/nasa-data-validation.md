@@ -68,3 +68,9 @@ macOS/Linux 使用虚拟环境 python 替换上述 Python 路径；真实测试�
 - [覆盖 CSV](../evidence/nasa-data/20261114T080209845385Z/coverage.csv) / [JSON](../evidence/nasa-data/20261114T080209845385Z/coverage.json)；同目录 raw/ 与 results/ 为真实原始响应与接口结果。
 
 已知限制：依赖发出 Starlette/httpx 和 statsmodels/pandas 弃用警告，当前测试执行成功；未修改其他成员的依赖版本与统计实现。HAC 独立数值基准、完整浏览器操作、AI API、PDF 视觉排版和部署不属于本次验收，不能据此宣称整个产品通过验收。
+
+## 集成后的 CI 兼容修复（2026-11-14）
+
+Job 132392296895 的完整日志确认：ImportError: cannot import name CACHE from app.main。main 已被拆分，状态由 app.state 提供，数据 HTTP 客户端在 app.investigations 使用。本次同步最新 main，并将 test_data_api.py 与 verify_nasa_data.py 的导入和 HTTP 补丁目标改为新模块；测试无论断言是否失败均清理缓存。未在入口重建缓存，也未跳过出错测试。
+
+本地执行与 CI 相同的 python scripts/verify.py：78 项中 77 项通过，仅默认不联网的 test_live_singapore 按设计跳过；JavaScript 语法检查通过。早先的 30 项与 25 组真实数据记录为当时版本的历史验收，不代表本次 CI 的测试数量。

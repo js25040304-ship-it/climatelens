@@ -25,7 +25,8 @@ def main():
         parser.error('Pass --live to explicitly enable 25 serial NASA requests.')
     import httpx
     from fastapi.testclient import TestClient
-    from app.main import app, CACHE
+    from app.main import app
+    from app.state import CACHE
     root = args.output / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     (root / 'raw').mkdir(parents=True, exist_ok=False)
     (root / 'results').mkdir()
@@ -38,7 +39,7 @@ def main():
             return response
 
     rows = []
-    with TestClient(app) as client, patch('app.main.httpx.AsyncClient', RecordingClient):
+    with TestClient(app) as client, patch('app.investigations.httpx.AsyncClient', RecordingClient):
         for city in CITIES:
             for variable in VARIABLES:
                 settings = dict(city=city, variable=variable, start=2001, end=2025)
