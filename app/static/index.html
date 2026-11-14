@@ -1,8 +1,416 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClimateLens — Ask. Investigate. Understand.</title><link rel="stylesheet" href="/static/style.css"></head><body>
-<header><a href="/" class="brand">◉ ClimateLens</a><span>EARTH SCIENCE / FIELD NOTES</span><a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener">About NASA POWER ↗</a></header>
-<main><section class="hero"><p class="eyebrow">A QUESTION IS WHERE SCIENCE BEGINS</p><h1>What is changing<br>in your corner of Earth?</h1><p>Explore real environmental observations. Test the evidence.<br>Make a conclusion that is your own.</p><div class="steps">Ask <b>→</b> Hypothesize <b>→</b> Observe <b>→</b> Verify <b>→</b> Interpret <b>→</b> Conclude</div></section>
-<div class="workspace"><aside><section class="card"><p class="eyebrow">01 / ASK & CONFIGURE</p><label for="question">Your research question</label><textarea id="question" rows="3">Has Singapore become hotter between 2001 and 2025?</textarea><button id="interpret" class="secondary">Interpret question</button><p id="parseMessage" class="muted"></p><label for="city">Location</label><select id="city"></select><label for="variable">Environmental variable</label><select id="variable"></select><p id="definition" class="muted"></p><div class="pair"><div><label for="start">From</label><input id="start" type="number" min="2001" value="2001"></div><div><label for="end">To</label><input id="end" type="number" min="2010" value="2025"></div></div><label for="hypothesis">Initial prediction · optional</label><select id="hypothesis"><option value="">Skip prediction</option><option>Increasing trend</option><option>Decreasing trend</option><option>No clear trend</option></select><button id="run">Confirm settings & investigate ↗</button><p class="muted">At least 10 complete years. Each data request is checked for availability, units and missing months.</p></section><div class="note">YOUR SCIENTIFIC NOTEBOOK<p>AI supports the investigation. Data provide the evidence. You develop the conclusion.</p></div></aside>
-<div class="content"><div id="status" role="status" aria-live="polite">Not started · Confirm your question and settings.</div><section class="card"><p class="eyebrow">02 / OBSERVE</p><h2 id="chartTitle">First, look at the evidence.</h2><p id="source" class="muted">Your NASA observations will appear here. No sample measurements are shown.</p><div id="chart" class="chart"><p>Choose a question.<br>Follow the evidence.</p></div><label for="observation">What patterns do you notice? · optional</label><textarea id="observation" rows="2" placeholder="Describe the visible pattern before checking the statistics…"></textarea><button id="verify" class="secondary" disabled>Reveal statistical evidence / skip observation</button><details><summary>Inspect annual observations</summary><div id="table"></div></details></section>
-<section id="evidence" class="card" hidden><p class="eyebrow">03 / VERIFY & INTERPRET</p><h2>How strong is the evidence?</h2><div id="metrics" class="metrics"></div><p id="interpretation"></p><details><summary>Method, quality and limitations</summary><div id="method"></div></details><label class="check"><input id="reviewed" type="checkbox"> I have reviewed the evidence.</label></section>
-<section class="card"><p class="eyebrow">04 / CONCLUDE</p><h2>Your evidence. Your words.</h2><p class="muted">A conclusion can report uncertainty. You do not need to agree with the tutor to export.</p><button id="template" class="secondary">Show a writing guide</button><p id="guide" hidden>For [location] during [period], I found… The estimated change and confidence interval were… This suggests… One limitation is… My original expectation was…</p><label for="conclusion">Student-authored conclusion</label><textarea id="conclusion" rows="5" placeholder="Write what you can reasonably conclude, and what remains uncertain."></textarea><div class="actions"><button id="feedback" class="secondary">Get optional feedback</button><button id="export">Download PDF ↗</button></div></section>
-<section class="card tutor"><p class="eyebrow">OPTIONAL / SCIENTIFIC TUTOR</p><label for="message">Ask about the evidence</label><div class="actions"><input id="message" placeholder="What does the confidence interval mean?"><button id="ask">Ask</button></div><p id="tutorMode" class="muted">Deterministic guidance works without an AI key.</p><div id="answer" role="status"></div><button id="applyProposal" class="secondary" hidden>Review proposed settings in Ask</button></section></div></div></main><footer>ClimateLens · Student investigation prototype · NASA POWER data, independently analyzed.<br>Observations are gridded estimates; this tool does not establish causes or predict future climate.</footer><script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e6ebe5">
+<meta name="description" content="A small island. A bigger climate story. Explore real NASA POWER evidence and develop your own conclusion.">
+<title>ClimateLens — Ask. Investigate. Understand.</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/ui-utils.js" defer>
+</script>
+<script src="/static/app.js" defer>
+</script>
+</head>
+<body>
+<a class="skip" href="#ask">Skip to the investigation</a>
+<div class="reading-progress" aria-hidden="true">
+<i>
+</i>
+</div>
+<header class="site-header">
+<a href="#home" class="brand" aria-label="ClimateLens home">
+<svg viewBox="0 0 32 32" aria-hidden="true">
+<circle cx="14" cy="14" r="10"/>
+<path d="m21 21 8 8M4 14h20M14 4c-7 7-7 13 0 20 7-7 7-13 0-20"/>
+<circle class="lens-dot" cx="14" cy="14" r="3"/>
+</svg>ClimateLens</a>
+<nav aria-label="Main navigation">
+<a href="#ask">The question</a>
+<a href="#observe">The evidence</a>
+<a href="#conclude">Your story</a>
+</nav>
+<a href="#ask" class="header-cta">Open field notebook <span>↗</span>
+</a>
+</header>
+<aside class="chapter-rail" aria-label="Investigation chapters">
+<a href="#ask" data-chapter="ask">
+<span>01</span>
+<em>Ask</em>
+</a>
+<a href="#observe" data-chapter="observe">
+<span>02</span>
+<em>Observe</em>
+</a>
+<a href="#verify-section" data-chapter="verify-section">
+<span>03</span>
+<em>Verify</em>
+</a>
+<a href="#conclude" data-chapter="conclude">
+<span>04</span>
+<em>Conclude</em>
+</a>
+</aside>
+<main>
+<section class="hero-story" id="home" aria-label="Explore Singapore">
+<div class="hero-stage">
+<div class="sky-grain" aria-hidden="true">
+</div>
+<div class="orbit" aria-hidden="true">
+</div>
+<div class="hero-copy">
+<span class="eyebrow">
+<i>
+</i> Earth science / Singapore and beyond</span>
+<h1>A small island.<br>
+<span>A bigger story.</span>
+</h1>
+<p>Start with a place you know.<br>Discover what the evidence can tell you.</p>
+</div>
+<div class="island-camera">
+<img class="island" src="/static/assets/singapore-island.webp" width="1536" height="1024" alt="Conceptual floating Singapore island with Marina Bay Sands, Supertrees, tropical gardens and a turquoise bay" fetchpriority="high">
+</div>
+<div class="island-coordinate mono">+ SINGAPORE<br>
+<span>1.3521° N / 103.8198° E</span>
+<small>Representative point · conceptual landscape</small>
+</div>
+<div class="hero-note">
+<span class="chip">Your world, in focus</span>
+<p>Real NASA observations.<br>Your questions. Your reasoning.</p>
+<a href="#ask" class="text-link">Start investigating <span>↗</span>
+</a>
+</div>
+<div class="fly-copy">
+<span class="chip">Look a little closer</span>
+<h2>What is changing<br>around us?</h2>
+<p>A skyline is familiar.<br>A long-term pattern takes a closer look.</p>
+</div>
+<div class="island-topics" aria-label="Choose a starting question">
+<button data-topic="T2M" class="island-topic heat">
+<i>+</i>
+<span>A warmer Singapore?</span>
+</button>
+<button data-topic="PRECTOTCORR" class="island-topic rain">
+<i>+</i>
+<span>A different rainfall story?</span>
+</button>
+<button data-topic="RH2M" class="island-topic humidity">
+<i>+</i>
+<span>What about humidity?</span>
+</button>
+</div>
+<div class="hero-floor">
+<span class="mono">Ask. Investigate. Understand.</span>
+<a href="#ask" class="scroll-link mono">Scroll into the story <span>↓</span>
+</a>
+</div>
+</div>
+</section>
+<div class="journey">
+<div class="journey-line" aria-hidden="true">
+</div>
+<section id="ask" class="chapter ask-section">
+<div class="chapter-heading reveal">
+<div>
+<span class="eyebrow">
+<b>01</b> / Begin with curiosity</span>
+<h2>Make it <em>your question.</em>
+</h2>
+</div>
+<p>You choose the scope.<br>The data get a chance to surprise you.</p>
+</div>
+<div class="ask-layout">
+<div class="question-card reveal">
+<label for="question">What would you like to investigate?</label>
+<textarea id="question" rows="2" maxlength="2000">Has Singapore become hotter between 2001 and 2025?</textarea>
+<div class="question-bottom">
+<span>Write your own, or start with a prompt below.</span>
+<button id="interpret" class="text-button">Interpret question <span>↗</span>
+</button>
+</div>
+<p id="parseMessage" class="inline-message" role="status" hidden>
+</p>
+<div class="question-prompts" aria-label="Starter questions">
+<button data-question="T2M">Is it getting warmer? <span>↗</span>
+</button>
+<button data-question="PRECTOTCORR">More rain, or less? <span>↗</span>
+</button>
+<button data-question="WS10M">Are winds changing? <span>↗</span>
+</button>
+</div>
+<div class="prediction">
+<label for="hypothesis">Before you look, what do you expect? <small>Optional</small>
+</label>
+<select id="hypothesis">
+<option value="">I'll let the evidence surprise me</option>
+<option>Increasing trend</option>
+<option>Decreasing trend</option>
+<option>No clear trend</option>
+</select>
+</div>
+</div>
+<div class="scope-card reveal">
+<div class="scope-title">
+<span class="mono">Your investigation lens</span>
+<span aria-hidden="true">⌖</span>
+</div>
+<div class="scope-fields">
+<div>
+<label for="city">Location</label>
+<select id="city" disabled>
+<option value="">Loading locations…</option>
+</select>
+</div>
+<div>
+<label for="variable">Environmental variable</label>
+<select id="variable" disabled>
+<option value="">Loading variables…</option>
+</select>
+</div>
+</div>
+<p id="definition" class="field-help">Loading the NASA POWER variable catalog…</p>
+<div class="year-pair">
+<div>
+<label for="start">From</label>
+<input id="start" type="number" min="2001" value="2001" inputmode="numeric">
+</div>
+<span>—</span>
+<div>
+<label for="end">To</label>
+<input id="end" type="number" min="2001" value="2025" inputmode="numeric">
+</div>
+</div>
+<p class="field-help">At least 10 complete calendar years. Availability and units are validated on each data request.</p>
+<p id="scopeError" class="inline-message error" role="alert" hidden>
+</p>
+<button id="run" class="primary" disabled>
+<span>Confirm settings & investigate</span>
+<span class="button-arrow">↗</span>
+</button>
+<span class="scope-detail" id="scopeDetail">NASA POWER / monthly point observations</span>
+</div>
+</div>
+<div class="transition-note reveal">
+<span class="line-icon">↳</span>
+<p>Think in grid cells, not city averages.<br>
+<span>The coordinate represents its surrounding dataset grid, including possible land and water.</span>
+</p>
+<a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener">Meet NASA POWER ↗</a>
+</div>
+</section>
+<section id="observe" class="chapter observe-section">
+<div class="chapter-heading reveal">
+<div>
+<span class="eyebrow">
+<b>02</b> / Follow the observations</span>
+<h2>Let the pattern <em>unfold.</em>
+</h2>
+</div>
+<p>Look first. Describe what you notice.<br>Then ask how strong the evidence is.</p>
+</div>
+<div id="status" class="status-bar reveal" role="status" aria-live="polite">
+<span class="status-dot">
+</span>
+<span id="statusText">Ready when you are. Confirm your question and settings.</span>
+</div>
+<article class="observation-card reveal" id="observationCard">
+<div class="chart-header">
+<div>
+<span class="mono" id="dataLabel">Your NASA field record</span>
+<h3 id="chartTitle">A question comes first.</h3>
+<p id="source" class="field-help">No observations loaded. Choose your scope to begin.</p>
+</div>
+<span class="data-badge" id="dataBadge">Awaiting evidence</span>
+</div>
+<div class="chart-legend" aria-label="Chart legend">
+<span>
+<i class="observed-key">
+</i> Annual observations</span>
+<span id="trendLegend" hidden>
+<i class="trend-key">
+</i> Fitted trend</span>
+<button id="toggleTable" class="text-button" aria-expanded="false" aria-controls="annualDetails">Inspect the numbers <span>↗</span>
+</button>
+</div>
+<div id="chart" class="chart">
+<div class="chart-empty">
+<svg viewBox="0 0 48 48" aria-hidden="true">
+<path d="M7 8v32h34M13 29l9-8 9 3 10-14"/>
+<circle cx="41" cy="10" r="3"/>
+</svg>
+<p>Your climate story<br>will take shape here.</p>
+<span>No sample measurements. No invented trends.</span>
+</div>
+</div>
+<div class="chart-tooltip" id="chartTooltip" role="status" hidden>
+</div>
+<div class="year-explorer" id="yearExplorer" hidden>
+<label for="yearCursor">Explore one year <strong id="selectedYear">
+</strong>
+</label>
+<input id="yearCursor" type="range" min="0" max="0" value="0" aria-label="Explore annual observations">
+<output id="selectedValue" for="yearCursor">
+</output>
+</div>
+<details id="annualDetails">
+<summary>Annual observations & source record</summary>
+<div class="table-wrap" id="table">
+</div>
+<div id="sourceRecord" class="source-record">
+</div>
+</details>
+<div class="observation-writing">
+<div>
+<span class="mono">Pause. Look. Notice.</span>
+<h4>What catches your eye?</h4>
+<p>Describe a pattern before you see the trend estimate.</p>
+</div>
+<div>
+<label class="sr-only" for="observation">Your observation · optional</label>
+<textarea id="observation" rows="3" maxlength="4000" placeholder="I notice… A year that stands out is… I wonder whether…">
+</textarea>
+</div>
+</div>
+<div class="continue-row">
+<span>You can skip this observation.</span>
+<button id="verify" class="primary" disabled>
+<span>Reveal statistical evidence</span>
+<span class="button-arrow">↓</span>
+</button>
+</div>
+</article>
+</section>
+<section id="verify-section" class="chapter verify-section">
+<div class="verify-text reveal">
+<span class="eyebrow">
+<b>03</b> / Ask how certain we are</span>
+<h2>A pattern.<br>
+<em>But how strong?</em>
+</h2>
+<p>A line summarizes change. An interval makes room for uncertainty. Neither can tell us what caused it.</p>
+<span class="verification-seal mono" id="verificationSeal">Evidence stays hidden until you choose to reveal it</span>
+</div>
+<div class="evidence-placeholder reveal" id="evidencePlaceholder">
+<span class="large-asterisk" aria-hidden="true">✳</span>
+<h3>Take a look first.</h3>
+<p>Run an investigation and reveal its statistical evidence from the chart above.</p>
+<a href="#observe" class="text-link">Back to the observations <span>↑</span>
+</a>
+</div>
+<article id="evidence" class="evidence-panel" hidden>
+<div id="metrics" class="metrics">
+</div>
+<p id="interpretation" class="interpretation">
+</p>
+<details>
+<summary>Method, quality & limitations</summary>
+<div id="method" class="method-copy">
+</div>
+<div id="excludedYears">
+</div>
+</details>
+<label class="review-check">
+<input id="reviewed" type="checkbox">
+<span>I have reviewed the evidence.<small>Reading the result is a step. Your conclusion is still yours to write.</small>
+</span>
+</label>
+<a href="#conclude" class="text-link">Bring it into your own words <span>↓</span>
+</a>
+</article>
+</section>
+<section id="conclude" class="chapter conclude-section">
+<div class="chapter-heading reveal">
+<div>
+<span class="eyebrow">
+<b>04</b> / Make sense of what you found</span>
+<h2>Your evidence.<br>
+<em>Your words.</em>
+</h2>
+</div>
+<p>You can report uncertainty.<br>You can question an explanation.<br>You decide what you can support.</p>
+</div>
+<div class="conclusion-layout">
+<article class="conclusion-card reveal">
+<div class="notebook-top">
+<span class="mono">The field notebook</span>
+<span id="wordCount">0 words</span>
+</div>
+<label for="conclusion">What can you reasonably conclude?</label>
+<textarea id="conclusion" rows="7" maxlength="12000" placeholder="Write your conclusion. Connect the pattern to specific evidence, acknowledge uncertainty, and explain what the analysis cannot tell you.">
+</textarea>
+<button id="template" class="text-button" aria-expanded="false" aria-controls="guide">Need a starting point? <span>+</span>
+</button>
+<p id="guide" class="writing-guide" hidden>For [location] during [period], I found… The estimated change and confidence interval were… This suggests… One limitation is… My original expectation was…</p>
+<div class="actions">
+<button id="feedback" class="secondary">
+<span>Get optional feedback</span>
+<span>✳</span>
+</button>
+<button id="export" class="primary">
+<span>Download PDF</span>
+<span class="button-arrow">↗</span>
+</button>
+</div>
+<div id="feedbackStatus" class="feedback-status" role="status" aria-live="polite" hidden>
+</div>
+<div id="feedbackPanel" class="feedback-panel" hidden>
+<div>
+<span class="mono">A second perspective</span>
+<span id="feedbackMode" class="mode-badge">
+</span>
+</div>
+<p id="feedbackText">
+</p>
+<p id="feedbackReason" class="reason-note">
+</p>
+</div>
+<p class="field-help">Your writing is never replaced by feedback. An incomplete investigation can still be exported with its limitations clearly marked.</p>
+<p id="draftNote" class="draft-note" role="status">This notebook stays in the current page. Download a PDF to keep a copy.</p>
+</article>
+<aside class="tutor-card reveal" id="tutor">
+<span class="tutor-mark" aria-hidden="true">✳</span>
+<span class="eyebrow">Optional / Scientific tutor</span>
+<h3>Keep the<br>questions coming.</h3>
+<p class="field-help">Ask about the evidence, uncertainty, or a different scope. Suggestions never change your settings automatically.</p>
+<div class="tutor-prompts">
+<button data-tutor="What does the confidence interval mean?">What does the interval mean? <span>↗</span>
+</button>
+<button data-tutor="Does a statistically significant trend prove a cause?">Does a trend prove a cause? <span>↗</span>
+</button>
+</div>
+<label for="message">Ask about the evidence</label>
+<textarea id="message" rows="2" maxlength="2000" placeholder="What would you like to understand?">
+</textarea>
+<button id="ask" class="text-button">Ask the tutor <span>↗</span>
+</button>
+<p id="tutorMode" class="mode-note">No key? Prepared scientific guidance still works.</p>
+<p id="tutorReason" class="reason-note">
+</p>
+<div id="answer" class="tutor-answer" role="status" aria-live="polite">
+</div>
+<button id="applyProposal" class="secondary" hidden>Review proposed settings in Ask ↑</button>
+</aside>
+</div>
+<div class="closing-note reveal">
+<span class="mono" id="completionLabel">An investigation starts with curiosity.</span>
+<p>Keep asking.<br>
+<em>The next question is yours.</em>
+</p>
+<a href="#ask" class="text-link">Revisit your question <span>↑</span>
+</a>
+</div>
+</section>
+</div>
+</main>
+<footer>
+<a href="#home" class="brand">ClimateLens</a>
+<p>NASA POWER observations. Independently analyzed.<br>Gridded estimates, not a city-wide station average. A trend does not establish causes or predict future climate.</p>
+<a href="https://github.com/js25040304-ship-it/climatelens" target="_blank" rel="noopener">Project & methods ↗</a>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite">
+</div>
+<noscript>
+<p class="noscript">Enable JavaScript to load data and use the investigation notebook.</p>
+</noscript>
+</body>
+</html>

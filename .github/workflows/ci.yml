@@ -21,6 +21,9 @@ jobs:
         env:
           LLM_API_KEY: ''
       - run: node --check app/static/app.js
+      - run: node --check app/static/ui-utils.js
+      - run: node --check app/static/snapshot-preview.js
+      - run: node --test tests/test_ui.cjs
       - name: Server startup smoke test
         run: |
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/climatelens-server.log 2>&1 &

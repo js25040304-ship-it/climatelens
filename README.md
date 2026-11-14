@@ -132,6 +132,8 @@ python -m unittest discover -s tests -p test_integration.py -v
 
 ### 4 号：浏览器端完整流程
 
+4 号前端更新、验证记录及共享预览的范围见 [前端交接](docs/student-ui-handoff.md)。前端仍由同一个 FastAPI 服务提供，不需要 npm。可额外运行 `node --test tests/test_ui.cjs` 检查数字显示、降级原因、范围校验和过期请求标记。
+
 启动网站后人工检查，记录预期、实际结果、截图和复现步骤：
 
 - 默认问题可确认参数；含糊问题不会偷偷运行分析。
