@@ -137,4 +137,60 @@ class TokenParameterRetryTests(ProviderHarness):
   data,_=self.call(lambda request,n: httpx.Response(200,json=chat('ok')),env={'LLM_TOKEN_PARAM':'max_completion_tokens'})
   self.assertEqual(self.requests[0]['max_completion_tokens'],600); self.assertNotIn('max_tokens',self.requests[0])
 
+@unittest.skipUnless(AVAILABLE,'Install requirements.txt to run AI tutor and PDF tests')
+class ReportTests(unittest.TestCase):
+ """PDF content checks. Layout itself is verified by rendering pages to images by hand (see PR notes)."""
+ def setUp(self):
+  from fastapi.testclient import TestClient
+  from app.main import app
+  self.client=TestClient(app)
+ def pdf(self,body,result=None):
+  """Uncompressed PDF so Helvetica text is searchable as literal strings."""
+  import reportlab.rl_config as rl
+  from app.main import RESULTS
+  if result: RESULTS['report-test']=result; body={'result_id':'report-test',**body}
+  try:
+   with patch.object(rl,'pageCompression',0): response=self.client.post('/api/report',json=body)
+  finally: RESULTS.pop('report-test',None)
+  self.assertEqual(response.status_code,200,response.text); self.assertTrue(response.content.startswith(b'%PDF-'))
+  return response.content
+ def test_ticks_are_readable_for_rainfall(self):
+  from app.main import axis_ticks
+  ticks,labels=axis_ticks(2267,2632)
+  self.assertGreaterEqual(len(ticks),3); self.assertLessEqual(ticks[0],2267); self.assertGreaterEqual(ticks[-1],2632)
+  self.assertTrue(all('e' not in l.lower() for l in labels),labels); self.assertIn('2,400',labels)
+ def test_ticks_small_span_distinct(self):
+  from app.main import axis_ticks
+  for low,high in [(2400,2404),(27.41,27.93),(0.0012,0.0019),(5,5),(-3.2,4.1)]:
+   with self.subTest(low=low,high=high):
+    ticks,labels=axis_ticks(low,high)
+    self.assertEqual(len(set(labels)),len(labels),labels); self.assertGreaterEqual(len(ticks),2)
+    self.assertLessEqual(ticks[0],low); self.assertGreaterEqual(ticks[-1],high); self.assertTrue(all('e' not in l for l in labels),labels)
+ def test_font_runs(self):
+  from app.main import font_runs
+  out=font_runs('Rain 降雨，＋１２３mm & <b>')
+  self.assertIn('&amp;',out); self.assertIn('&lt;b&gt;',out); self.assertNotIn('<b>',out)
+  self.assertIn('<font name="STSong-Light">降雨，＋１２３</font>',out); self.assertTrue(out.startswith('Rain '))
+ def test_chart_axes_and_no_scientific_notation(self):
+  settings,result=make_result('PRECTOTCORR',[{'year':2001+i,'value':2300+12*i+(80 if i%3==0 else -45)} for i in range(25)],'mm/year')
+  pdf=self.pdf({'settings':settings,'conclusion':'Rainfall rose.','reviewed':True},result)
+  self.assertFalse(b'e+03' in pdf,b'e+03'); self.assertTrue(b'(Year)' in pdf,b'(Year)'); self.assertTrue(rb'Precipitation \(mm/year\)' in pdf,rb'Precipitation \(mm/year\)')
+  self.assertTrue(b'2,400' in pdf,b'2,400'); self.assertTrue(b'Fitted linear trend' in pdf,b'Fitted linear trend')
+ def test_no_evidence_states_reason_and_no_fitted_legend(self):
+  settings,result=make_result('PRECTOTCORR',[{'year':2016+i,'value':2400+i} for i in range(5)],'mm/year')
+  pdf=self.pdf({'settings':settings},result)
+  self.assertTrue(b'Fewer than 10 complete years' in pdf,b'Fewer than 10 complete years'); self.assertFalse(b'Fitted linear trend' in pdf,b'Fitted linear trend')
+ def test_readable_settings_and_excluded_years(self):
+  settings,result=make_result()
+  result['excluded_years']=[{'year':2003,'missing_or_invalid_months':[1,2]}]
+  pdf=self.pdf({'settings':settings},result)
+  self.assertTrue(b'Singapore' in pdf,b'Singapore'); self.assertFalse(b'{"city"' in pdf,b'{"city"'); self.assertTrue(rb'2003 \(missing or invalid months: 1, 2\)' in pdf,rb'2003 \(missing or invalid months: 1, 2\)')
+ def test_stress_inputs_export(self):
+  text='中文标点，。；：“引号”（括号）【】、……——！？ 全角数字１２３４５ 中English混排ABC中 '+'无空格长中文'*200+' https://example.org/'+'a'*400+' '+'Supercalifragilistic'*30+' <script>&amp; R&D > 5 < 10'
+  for variable,unit in [('T2M','C'),('PRECTOTCORR','mm/year')]:
+   settings,result=make_result(variable,None,unit)
+   with self.subTest(variable=variable): self.pdf({'settings':settings,'question':text[:2000],'hypothesis':text[:200],'observation':text[:4000],'conclusion':text,'reviewed':True},result)
+ def test_export_without_result_or_key(self):
+  with patch.dict(os.environ,{'LLM_API_KEY':''}): self.pdf({'conclusion':'Only my words.'})
+
 if __name__=='__main__': unittest.main()
