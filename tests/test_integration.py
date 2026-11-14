@@ -34,7 +34,7 @@ class IntegrationTests(unittest.TestCase):
   with patch.dict(os.environ,{'LLM_API_KEY':''}):r=self.client.post('/api/tutor',json={})
   self.assertEqual(r.json()['mode'],'deterministic')
  def test_settings_mismatch(self):
-  from app.main import RESULTS
+  from app.state import RESULTS
   RESULTS['test']={'settings':{'city':'Singapore','variable':'T2M','start':2001,'end':2025}}
   r=self.client.post('/api/report',json={'result_id':'test','settings':{'city':'Bangkok','variable':'T2M','start':2001,'end':2025}})
   self.assertEqual(r.status_code,409);RESULTS.pop('test')
