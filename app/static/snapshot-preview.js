@@ -34,8 +34,8 @@ if (document.body.dataset.mode === 'snapshot') {
         const r = b.records[`${data.settings.city}|${data.settings.variable}`], current = r && data.result_id === r.id && data.settings.start === start && data.settings.end === end;
         let answer = 'Load matching observations before interpreting a trend. Your conclusion is your own; this preview does not assess or grade it.';
         if (current) {
-          const s = r.stats, u = ClimateUI.unit(r.unit);
-          answer = `The saved NASA record has ${s.n} complete years. Its recorded slope is ${ClimateUI.number(s.slope_decade)} ${u} per decade, with a 95% interval from ${ClimateUI.number(s.ci95_year[0]*10)} to ${ClimateUI.number(s.ci95_year[1]*10)} and p ${s.p_value<.001?'':'= '}${ClimateUI.pValue(s.p_value)}.\n\nAn interval describes uncertainty in the estimated slope. Statistical significance does not establish a cause or describe practical importance. Connect your explanation to the evidence and mention the grid-cell limitation. These prepared prompts do not evaluate the correctness of your writing.`;
+          const s = r.stats, u = ClimateUI.trendUnit(r.unit);
+          answer = `The saved NASA record has ${s.n} complete years. Its recorded slope is ${ClimateUI.number(s.slope_decade)} ${u} per decade, with a 95% interval from ${ClimateUI.number(s.ci95_year[0]*10)} to ${ClimateUI.number(s.ci95_year[1]*10)} ${u} per decade and p ${s.p_value<.001?'':'= '}${ClimateUI.pValue(s.p_value)}.\n\nAn interval describes uncertainty in the estimated slope. Statistical significance does not establish a cause or describe practical importance. Connect your explanation to the evidence and mention the grid-cell limitation. These prepared prompts do not evaluate the correctness of your writing.`;
         }
         return response({mode:'deterministic archive guidance',reason:'snapshot',text:answer});
       }
@@ -52,7 +52,7 @@ if (document.body.dataset.mode === 'snapshot') {
       ['question','hypothesis','observation','conclusion'].forEach(key=>{add('h2',key[0].toUpperCase()+key.slice(1));add('p',writing[key]||'(Not written)');});
       add('p',`Status: ${record?.stats&&writing.reviewed&&writing.conclusion.trim()?'Evidence reviewed and conclusion written.':'Incomplete investigation.'}`);
       if(record) {
-        add('h2','Recorded evidence'); const s=record.stats,u=ClimateUI.unit(record.unit);
+        add('h2','Recorded evidence'); const s=record.stats,u=ClimateUI.trendUnit(record.unit);
         add('p',`Slope per decade: ${ClimateUI.number(s.slope_decade)} ${u}; 95% interval: ${ClimateUI.number(s.ci95_year[0]*10)} to ${ClimateUI.number(s.ci95_year[1]*10)} ${u}; p ${s.p_value<.001?'':'= '}${ClimateUI.pValue(s.p_value)}.`);
         add('p',s.method); s.limitations.forEach(v=>add('p',v)); ClimateUI.excluded(record.excluded_years).forEach(v=>add('p',v));
         const chart=document.querySelector('#chart svg');if(chart)report.append(chart.cloneNode(true));
