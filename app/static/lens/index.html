@@ -178,6 +178,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
  .credit{display:none}
  .sound{right:10px;bottom:76px}  /* sits above the full-width step dock */
+ body[data-scene="1"] .sound{bottom:126px}  /* and above the island ring controls on the sky */
+ body.ring-focus .sound{opacity:0;pointer-events:none}  /* the case file sheet needs the space; it comes back on landing */
  .sound-meta{display:none}
  nav.dock button{padding:7px 8px}
  .lbl{font-size:26px}.callout{font-size:24px}svg.chart{max-height:none}
