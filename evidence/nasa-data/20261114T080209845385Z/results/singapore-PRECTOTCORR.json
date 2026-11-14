@@ -1,0 +1,180 @@
+{
+  "id": "BLaRzkdjZK-HoGE8zg5wGC6yD4Z7UxO-",
+  "settings": {
+    "city": "Singapore",
+    "variable": "PRECTOTCORR",
+    "start": 2001,
+    "end": 2025
+  },
+  "annual": [
+    {
+      "year": 2001,
+      "value": 2744.5199999999995
+    },
+    {
+      "year": 2002,
+      "value": 1956.99
+    },
+    {
+      "year": 2003,
+      "value": 2266.5
+    },
+    {
+      "year": 2004,
+      "value": 2302.39
+    },
+    {
+      "year": 2005,
+      "value": 2163.1
+    },
+    {
+      "year": 2006,
+      "value": 2804.96
+    },
+    {
+      "year": 2007,
+      "value": 2857.96
+    },
+    {
+      "year": 2008,
+      "value": 2506.95
+    },
+    {
+      "year": 2009,
+      "value": 2140.24
+    },
+    {
+      "year": 2010,
+      "value": 2292.69
+    },
+    {
+      "year": 2011,
+      "value": 2956.44
+    },
+    {
+      "year": 2012,
+      "value": 2352.03
+    },
+    {
+      "year": 2013,
+      "value": 2682.18
+    },
+    {
+      "year": 2014,
+      "value": 2071.65
+    },
+    {
+      "year": 2015,
+      "value": 1778.3700000000003
+    },
+    {
+      "year": 2016,
+      "value": 2221.1000000000004
+    },
+    {
+      "year": 2017,
+      "value": 2686.28
+    },
+    {
+      "year": 2018,
+      "value": 2199.2799999999997
+    },
+    {
+      "year": 2019,
+      "value": 1914.1299999999999
+    },
+    {
+      "year": 2020,
+      "value": 2458.1400000000003
+    },
+    {
+      "year": 2021,
+      "value": 4281.72
+    },
+    {
+      "year": 2022,
+      "value": 4053.94
+    },
+    {
+      "year": 2023,
+      "value": 5657.490000000001
+    },
+    {
+      "year": 2024,
+      "value": 5164.56
+    },
+    {
+      "year": 2025,
+      "value": 7465.16
+    }
+  ],
+  "excluded_years": [],
+  "source_unit": "mm/day",
+  "unit": "mm/year",
+  "aggregation": "Monthly daily rate multiplied by days, then summed",
+  "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=PRECTOTCORR&community=RE&latitude=1.3521&longitude=103.8198&start=2001&end=2025&format=JSON",
+  "source_header": {
+    "title": "NASA/POWER Source Native Resolution Monthly and Annual",
+    "api": {
+      "version": "v2.10.0",
+      "name": "POWER Monthly and Annual API"
+    },
+    "sources": [
+      "MERRA2"
+    ],
+    "fill_value": -999.0,
+    "time_standard": "LST",
+    "start": "20010101",
+    "end": "20251231"
+  },
+  "stats": {
+    "n": 25,
+    "slope_year": 114.04427692307686,
+    "slope_decade": 1140.4427692307686,
+    "ci95_year": [
+      9.539669372743077,
+      218.54888447341065
+    ],
+    "p_value": 0.03377625468873005,
+    "significant": true,
+    "direction": "increasing",
+    "hac_lags": 2,
+    "fitted": [
+      1590.6194769230767,
+      1704.6637538461537,
+      1818.7080307692304,
+      1932.7523076923073,
+      2046.7965846153843,
+      2160.840861538461,
+      2274.885138461538,
+      2388.929415384615,
+      2502.9736923076916,
+      2617.0179692307684,
+      2731.062246153845,
+      2845.1065230769223,
+      2959.1507999999994,
+      3073.195076923076,
+      3187.239353846153,
+      3301.2836307692296,
+      3415.3279076923063,
+      3529.3721846153835,
+      3643.4164615384607,
+      3757.4607384615374,
+      3871.505015384614,
+      3985.549292307691,
+      4099.593569230768,
+      4213.637846153844,
+      4327.682123076922
+    ],
+    "method": "OLS with Bartlett Newey-West HAC covariance, 2 annual lags, finite-sample correction and approximate t inference (df=23).",
+    "limitations": [
+      "Gridded NASA POWER data describe a grid cell, not a city-wide station average.",
+      "A linear trend is a summary of this selected period, not a forecast or causal explanation.",
+      "HAC uncertainty is approximate with a short annual series; structural breaks and lag choice can affect inference.",
+      "Repeatedly selecting periods or variables may increase false-positive findings.",
+      "Non-significance does not prove absence of change."
+    ]
+  },
+  "analysis_error": null,
+  "retrieved_at": "2026-11-14T08:02:24Z"
+}

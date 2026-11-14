@@ -41,4 +41,41 @@ class DataTests(unittest.TestCase):
  def test_source(self):
   url=source_url(S);self.assertTrue(url.startswith('https://power.larc.nasa.gov/'));self.assertIn('latitude=1.3521',url);self.assertIn('community=RE',url)
 
+class DataBoundaryTests(unittest.TestCase):
+ def test_malformed_payload_is_validation_error(self):
+  for payload in [None, [], {}, {'parameters':None},
+                  {'parameters':{'T2M':None},'properties':{}},
+                  {'parameters':{'T2M':{'units':'C'}},'properties':{'parameter':[]}},
+                  {**fixture(),'header':None}]:
+   with self.subTest(payload=payload), self.assertRaises(ValueError): normalize(payload,S)
+ def test_custom_fill_excludes_entire_year(self):
+  p=fixture();p['header']['fill_value']=-888
+  p['properties']['parameter']['T2M']['200402']=-888
+  r=normalize(p,S)
+  self.assertEqual(r['excluded_years'],[{'year':2004,'missing_or_invalid_months':[2]}])
+  self.assertNotIn(2004,[row['year'] for row in r['annual']])
+ def test_leap_day_weighted_mean(self):
+  p=fixture(value=0);p['properties']['parameter']['T2M']['200402']=29
+  self.assertAlmostEqual(normalize(p,S)['annual'][3]['value'],29*29/366)
+ def test_solar_is_daily_mean_not_annual_total(self):
+  s={**S,'variable':'ALLSKY_SFC_SW_DWN'}
+  r=normalize(fixture(s['variable'],'kW-hr/m^2/day',5),s)
+  self.assertEqual([x['value'] for x in r['annual']],[5]*10)
+ def test_humidity_endpoints_and_calm_wind(self):
+  for v,u,values in [('RH2M','%',[0,100]),('WS10M','m/s',[0])]:
+   for value in values:
+    self.assertEqual(len(normalize(fixture(v,u,value),{**S,'variable':v})['annual']),10)
+ def test_input_is_not_modified(self):
+  p=fixture();before=copy.deepcopy(p);normalize(p,S);self.assertEqual(p,before)
+ def test_requested_window_only_and_sorted(self):
+  p=fixture();p['properties']['parameter']['T2M']['199901']=999
+  self.assertEqual([r['year'] for r in normalize(p,S)['annual']],list(range(2001,2011)))
+ def test_normalize_validates_settings(self):
+  for change in [{'start':True},{'end':2000},{'start':2002},{'variable':'unknown'}]:
+   with self.assertRaises(ValueError):normalize(fixture(),{**S,**change})
+ def test_all_missing_months_reported(self):
+  p=fixture();p['properties']['parameter']['T2M']={}
+  r=normalize(p,S);self.assertEqual(r['annual'],[])
+  self.assertEqual(r['excluded_years'][0]['missing_or_invalid_months'],list(range(1,13)))
+
 if __name__=='__main__':unittest.main()

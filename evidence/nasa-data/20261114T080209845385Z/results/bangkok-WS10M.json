@@ -1,0 +1,181 @@
+{
+  "id": "D3qeFXCiFGZAHlCtW4TKITO1oUT44WPf",
+  "settings": {
+    "city": "Bangkok",
+    "variable": "WS10M",
+    "start": 2001,
+    "end": 2025
+  },
+  "annual": [
+    {
+      "year": 2001,
+      "value": 2.745287671232877
+    },
+    {
+      "year": 2002,
+      "value": 2.779123287671233
+    },
+    {
+      "year": 2003,
+      "value": 2.6981643835616436
+    },
+    {
+      "year": 2004,
+      "value": 2.9268852459016395
+    },
+    {
+      "year": 2005,
+      "value": 2.8958082191780816
+    },
+    {
+      "year": 2006,
+      "value": 2.7645753424657538
+    },
+    {
+      "year": 2007,
+      "value": 2.831835616438356
+    },
+    {
+      "year": 2008,
+      "value": 2.8110928961748636
+    },
+    {
+      "year": 2009,
+      "value": 2.7228767123287674
+    },
+    {
+      "year": 2010,
+      "value": 2.726849315068493
+    },
+    {
+      "year": 2011,
+      "value": 2.850767123287671
+    },
+    {
+      "year": 2012,
+      "value": 2.6785792349726774
+    },
+    {
+      "year": 2013,
+      "value": 2.750164383561643
+    },
+    {
+      "year": 2014,
+      "value": 2.845534246575342
+    },
+    {
+      "year": 2015,
+      "value": 2.8527945205479446
+    },
+    {
+      "year": 2016,
+      "value": 2.8998087431693995
+    },
+    {
+      "year": 2017,
+      "value": 2.769671232876712
+    },
+    {
+      "year": 2018,
+      "value": 2.671068493150685
+    },
+    {
+      "year": 2019,
+      "value": 2.9586301369863017
+    },
+    {
+      "year": 2020,
+      "value": 2.869590163934427
+    },
+    {
+      "year": 2021,
+      "value": 2.7453698630136985
+    },
+    {
+      "year": 2022,
+      "value": 2.5929863013698626
+    },
+    {
+      "year": 2023,
+      "value": 2.947534246575343
+    },
+    {
+      "year": 2024,
+      "value": 2.8639890710382514
+    },
+    {
+      "year": 2025,
+      "value": 2.768849315068493
+    }
+  ],
+  "excluded_years": [],
+  "source_unit": "m/s",
+  "unit": "m/s",
+  "aggregation": "Day-weighted annual mean",
+  "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=WS10M&community=RE&latitude=13.7563&longitude=100.5018&start=2001&end=2025&format=JSON",
+  "source_header": {
+    "title": "NASA/POWER Source Native Resolution Monthly and Annual",
+    "api": {
+      "version": "v2.10.0",
+      "name": "POWER Monthly and Annual API"
+    },
+    "sources": [
+      "MERRA2",
+      "POWER"
+    ],
+    "fill_value": -999.0,
+    "time_standard": "LST",
+    "start": "20010101",
+    "end": "20251231"
+  },
+  "stats": {
+    "n": 25,
+    "slope_year": 0.0009032151185890006,
+    "slope_decade": 0.009032151185890005,
+    "ci95_year": [
+      -0.003193479157162656,
+      0.004999909394340657
+    ],
+    "p_value": 0.6526058407520661,
+    "significant": false,
+    "direction": "increasing",
+    "hac_lags": 2,
+    "fitted": [
+      2.787874849222938,
+      2.788778064341527,
+      2.7896812794601162,
+      2.790584494578705,
+      2.7914877096972943,
+      2.792390924815883,
+      2.793294139934472,
+      2.794197355053061,
+      2.79510057017165,
+      2.7960037852902393,
+      2.796907000408828,
+      2.7978102155274174,
+      2.798713430646006,
+      2.799616645764595,
+      2.8005198608831843,
+      2.801423076001773,
+      2.8023262911203624,
+      2.803229506238951,
+      2.80413272135754,
+      2.8050359364761293,
+      2.805939151594718,
+      2.8068423667133073,
+      2.807745581831896,
+      2.808648796950485,
+      2.8095520120690742
+    ],
+    "method": "OLS with Bartlett Newey-West HAC covariance, 2 annual lags, finite-sample correction and approximate t inference (df=23).",
+    "limitations": [
+      "Gridded NASA POWER data describe a grid cell, not a city-wide station average.",
+      "A linear trend is a summary of this selected period, not a forecast or causal explanation.",
+      "HAC uncertainty is approximate with a short annual series; structural breaks and lag choice can affect inference.",
+      "Repeatedly selecting periods or variables may increase false-positive findings.",
+      "Non-significance does not prove absence of change."
+    ]
+  },
+  "analysis_error": null,
+  "retrieved_at": "2026-11-14T08:02:55Z"
+}

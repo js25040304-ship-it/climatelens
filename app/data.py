@@ -25,10 +25,20 @@ def source_url(s):
  return 'https://power.larc.nasa.gov/api/temporal/monthly/point?'+urlencode(dict(parameters=s['variable'],community='RE',latitude=lat,longitude=lon,start=s['start'],end=s['end'],format='JSON'))
 
 def normalize(payload,s):
+ s=validate(s)
  spec=VARIABLES[s['variable']]
- meta=payload.get('parameters',{}).get(s['variable'],{})
+ if not isinstance(payload,dict): raise ValueError('NASA response must be a JSON object.')
+ parameters=payload.get('parameters')
+ properties=payload.get('properties')
+ header=payload.get('header',{})
+ if not isinstance(parameters,dict) or not isinstance(properties,dict) or not isinstance(header,dict):
+  raise ValueError('NASA response has malformed metadata or observations.')
+ meta=parameters.get(s['variable'])
+ if not isinstance(meta,dict): raise ValueError('NASA response is missing parameter metadata.')
  if meta.get('units') not in spec['accepted']: raise ValueError('NASA returned an unverified unit; analysis is disabled: '+str(meta.get('units')))
- series=payload.get('properties',{}).get('parameter',{}).get(s['variable'])
+ parameter=properties.get('parameter')
+ if not isinstance(parameter,dict): raise ValueError('NASA response does not contain monthly observations.')
+ series=parameter.get(s['variable'])
  if not isinstance(series,dict): raise ValueError('NASA response does not contain monthly observations.')
  fill=payload.get('header',{}).get('fill_value',-999)
  annual=[]; excluded=[]
