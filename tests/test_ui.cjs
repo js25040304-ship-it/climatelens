@@ -35,3 +35,36 @@ test('settings and writing revisions reject stale async results',async()=>{
   assert.equal(await pending,false); assert.equal(writing.isCurrent(draft),true);
   writing.next();assert.equal(writing.isCurrent(draft),false);
 });
+
+test('shared preview keeps archive years when a question requests 2001–2024', async () => {
+  const {readFileSync} = require('node:fs');
+  const {join} = require('node:path');
+  const {runInNewContext} = require('node:vm');
+  const record = {id: 'snapshot:singapore-T2M'};
+  const snapshot = {
+    catalog: {cities: {Singapore: {}}, variables: {T2M: {}}},
+    records: {'Singapore|T2M': record},
+  };
+  const window = {};
+  runInNewContext(
+    readFileSync(join(__dirname, '../app/static/snapshot-preview.js'), 'utf8'),
+    {
+      window,
+      Response,
+      fetch: async () => ({ok: true, json: async () => snapshot}),
+      document: {
+        body: {dataset: {mode: 'snapshot'}, prepend() {}},
+        createElement: () => ({}),
+        getElementById: () => ({}),
+        querySelector: () => ({}),
+        querySelectorAll: () => [{}, {}],
+      },
+    },
+  );
+  const {proposed, message} = await (await window.ClimateSnapshot.request('interpret', {
+    question: 'How has the temperature in Singapore changed between 2001 and 2024?',
+  })).json();
+  assert.match(message, /different period.*2001–2025/);
+  assert.deepEqual(proposed, {city: 'Singapore', variable: 'T2M', start: 2001, end: 2025});
+  assert.deepEqual(await (await window.ClimateSnapshot.request('investigate', proposed)).json(), record);
+});
