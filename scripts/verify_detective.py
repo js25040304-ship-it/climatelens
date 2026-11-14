@@ -44,8 +44,8 @@ with sync_playwright() as playwright:
             p_text = str(p_value)
         assert metrics[2] == ("< 0.001" if p_value < .001 else p_text), metrics
         expect(page.locator("#tl")).to_be_attached()
-        page.locator("#toCase").click()
         page.locator("#reviewed").check()
+        page.locator("#toCase").click()
         conclusion = "观测记录显示变化趋势，不能证明原因。"
         page.locator("#concl").fill(conclusion)
         page.locator("#close").click()
