@@ -67,6 +67,12 @@ class IntegrationTests(unittest.TestCase):
     self.assertAlmostEqual(result["p_value"], expected_p, places=10)
     self.assertAlmostEqual(lower, slope - margin, places=10)
     self.assertAlmostEqual(upper, slope + margin, places=10)
+ def test_exact_linear_series_does_not_claim_zero_uncertainty(self):
+  from app.analysis import analyze
+  rows = [{'year': 2001+i, 'value': 25+0.1*i} for i in range(25)]
+  with self.assertRaisesRegex(ValueError, 'too small to estimate'):
+   analyze(rows)
+
  def test_stable_nonsignificant(self):
   from app.analysis import analyze
   r=analyze([{'year':2001+i,'value':20+(-1)**i*.3} for i in range(25)])

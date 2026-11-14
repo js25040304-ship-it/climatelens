@@ -153,6 +153,8 @@ python -m unittest discover -s tests -p test_integration.py -v
 python -m unittest discover -s tests -p test_integration.py -v
 ```
 
+模型只选择预设的辅导主题。应用用固定文字显示提示，并单独提供由服务器计算的科学摘要。如果上游返回自由文本或无效主题，页面改用确定性反馈。
+
 关注 `test_no_key_fallback`、`test_pdf_incomplete_and_escaping`、`test_settings_mismatch`。先留空 `.env` 中的 `LLM_API_KEY` 验证无密钥模式，再在自己的电脑配置兼容 Chat Completions 的提供商：
 
 ```dotenv
