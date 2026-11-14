@@ -138,6 +138,37 @@ class TokenParameterRetryTests(ProviderHarness):
   self.assertEqual(self.requests[0]['max_completion_tokens'],600); self.assertNotIn('max_tokens',self.requests[0])
 
 @unittest.skipUnless(AVAILABLE,'Install requirements.txt to run AI tutor and PDF tests')
+class ExplanationTests(unittest.TestCase):
+ def stats(self,slope_year,ci,p,unit='C',n=25):
+  return {'unit':unit,'settings':{'city':'Singapore','variable':'T2M','start':2001,'end':2025},'stats':{'slope_year':slope_year,'slope_decade':slope_year*10,'ci95_year':ci,'p_value':p,'n':n,'significant':p<.05,'direction':'increasing' if slope_year>0 else 'decreasing' if slope_year<0 else 'flat'}}
+ def assertPlainNumbers(self,text):
+  import re
+  self.assertIsNone(re.search(r'\d[eE][+-]?\d',text),text)
+ def test_interval_scaled_to_decade(self):
+  from app.main import explanation
+  text=explanation(self.stats(.02,[.0163,.0237],1e-10))
+  self.assertIn('0.200',text); self.assertIn('0.163 to 0.237',text); self.assertIn('every 10 years',text); self.assertIn('2001–2025',text)
+ def test_large_rainfall_values_are_plain(self):
+  from app.main import explanation
+  text=explanation(self.stats(123.45,[100.1,146.9],5.486e-14,'mm/year'))
+  self.assertPlainNumbers(text); self.assertIn('1,234',text); self.assertIn('1,001 to 1,469',text); self.assertIn('p < 0.001',text)
+ def test_tiny_and_negative_values_are_plain(self):
+  from app.main import explanation
+  text=explanation(self.stats(-.0000234,[-.0000400,-.0000068],.0123,'kW-hr/m^2/day'))
+  self.assertPlainNumbers(text); self.assertIn('falls',text); self.assertIn('p = 0.0123',text)
+ def test_nonsignificant_is_not_no_change(self):
+  from app.main import explanation
+  text=explanation(self.stats(.003,[-.01,.016],.62))
+  self.assertIn('p = 0.62',text); self.assertIn('not proof that nothing changed',text); self.assertIn('includes zero',text)
+ def test_never_causal(self):
+  from app.main import explanation
+  for p in (.001,.5):
+   with self.subTest(p=p): self.assertIn('does not show what caused it',explanation(self.stats(.02,[.01,.03] if p<.05 else [-.01,.05],p)))
+ def test_no_evidence(self):
+  from app.main import explanation
+  self.assertIn('No valid trend inference',explanation(None)); self.assertIn('No valid trend inference',explanation({'stats':None}))
+
+@unittest.skipUnless(AVAILABLE,'Install requirements.txt to run AI tutor and PDF tests')
 class ReportTests(unittest.TestCase):
  """PDF content checks. Layout itself is verified by rendering pages to images by hand (see PR notes)."""
  def setUp(self):

@@ -78,10 +78,20 @@ def result_for(w):
  if r['settings']!=w.settings.model_dump(): raise HTTPException(409,'Settings changed; rerun the investigation.')
  return r
 
+import math, itertools
 def explanation(r):
- if not r or not r['stats']: return 'No valid trend inference is available. Record the data limitation; do not infer a trend from missing evidence.'
- s=r['stats']; lo,hi=s['ci95_year']
- return f"Estimated {s['direction']} trend: {s['slope_decade']:.3g} {r['unit']} per decade; 95% CI [{lo*10:.3g}, {hi*10:.3g}]; p={s['p_value']:.4g}; n={s['n']}. "+('Evidence against a zero linear slope at the 0.05 threshold. ' if s['significant'] else 'The evidence does not distinguish the slope from zero at the 0.05 threshold; this is not proof of no change. ')+'This observational analysis cannot establish a cause.'
+ """Plain-language summary of server statistics only. Interval endpoints are scaled to per-decade like the slope; numbers never use scientific notation."""
+ if not r or not r.get('stats'): return 'No valid trend inference is available. Record the data limitation; do not infer a trend from missing evidence.'
+ s=r['stats']; slope=s['slope_decade']; lo,hi=(v*10 for v in s['ci95_year']); unit={'C':'°C'}.get(r['unit'],r['unit']); p=s['p_value']
+ biggest=max(abs(slope),abs(lo),abs(hi)); digits=max(0,2-math.floor(math.log10(biggest))) if biggest else 0
+ def num(v): return f'{v+0.:,.{digits}f}'
+ period=f"{r['settings']['start']}–{r['settings']['end']}" if r.get('settings') else 'the selected period'
+ move={'increasing':'rises','decreasing':'falls'}.get(s['direction'],'stays flat')
+ return (f"Over {period} ({s['n']} complete years), the fitted straight line {move} by about {num(abs(slope))} {unit} every 10 years. "
+  f"95% confidence interval: {num(lo)} to {num(hi)} {unit} per decade, a plausible range for the underlying rate. "
+  +('p < 0.001' if p<.001 else f'p = {p:.3g}')+': '
+  +(f"if there were no linear trend, a slope this far from zero would be unlikely, so this is evidence of a {'rise' if slope>0 else 'fall'} at the 0.05 level. " if s['significant'] else 'the interval includes zero, so zero change is still consistent with the data at the 0.05 level. This is not proof that nothing changed; a change may be too small or too noisy to detect in these years. ')
+  +'This describes a pattern in observational data; it does not show what caused it.')
 
 import logging; LOG=logging.getLogger('climatelens.tutor')
 TOKEN_PARAMS=('max_tokens','max_completion_tokens')
@@ -131,7 +141,6 @@ async def tutor(w:Writing):
   return {'mode':'deterministic fallback','text':fallback,'reason':reason}
  return {'mode':'AI advisory — verify against evidence','text':answer,'verified_summary':base}
 
-import math, itertools
 def axis_ticks(low,high,target=5):
  """Round-number axis ticks covering [low, high] and plain labels (thousands separators, never scientific notation)."""
  low,high=min(low,high),max(low,high)
