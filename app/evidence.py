@@ -17,5 +17,5 @@ def explanation(r):
  return (f"Over {period} ({s['n']} complete years), the fitted straight line {move} by about {num(abs(slope))} {unit} every 10 years. "
   f"95% confidence interval: {num(lo)} to {num(hi)} {unit} per decade, a plausible range for the underlying rate. "
   +('p < 0.001' if p<.001 else f'p = {p_text}')+': '
-  +(f"if there were no linear trend, a slope this far from zero would be unlikely, so this is evidence of a {'rise' if slope>0 else 'fall'} at the 0.05 level. " if s['significant'] else 'the interval includes zero, so zero change is still consistent with the data at the 0.05 level. This is not proof that nothing changed; a change may be too small or too noisy to detect in these years. ')
+  +(f"if there were no linear trend, a test statistic at least this extreme in either direction would be unlikely, so this is evidence of a {'rise' if slope>0 else 'fall'} at the 0.05 level. " if s['significant'] else 'the interval includes zero, so zero change is still consistent with the data at the 0.05 level. This is not proof that nothing changed; a change may be too small or too noisy to detect in these years. ')
   +'This describes a pattern in observational data; it does not show what caused it.')
