@@ -309,6 +309,25 @@ class ReportTests(unittest.TestCase):
   for variable,unit in [('T2M','C'),('PRECTOTCORR','mm/year')]:
    settings,result=make_result(variable,None,unit)
    with self.subTest(variable=variable): self.pdf({'settings':settings,'question':text[:2000],'hypothesis':text[:200],'observation':text[:4000],'conclusion':text,'reviewed':True},result)
+ def test_annual_table_never_leaves_a_lone_row(self):
+  """A 25-year rainfall report used to put only the 2025 row (plus repeated header) on page 3."""
+  import re
+  rows=[{'year':2001+i,'value':2300+12*i+(80 if i%3==0 else -45)} for i in range(25)]
+  settings,result=make_result('PRECTOTCORR',rows,'mm/year')
+  split_seen=False
+  for extra in range(0,60,2):  # lengthen the conclusion so the page break sweeps across every table row
+   with self.subTest(extra_lines=extra):
+    body={'settings':settings,'question':'Has annual rainfall in Singapore changed from 2001 to 2025?','hypothesis':'Rainfall increased','observation':'Wetter years after 2015',
+     'conclusion':'Annual rainfall at this grid point increased by about 120 mm/year per decade. This is an association over time, not proof of cause.'+'\nExtra line of student reasoning.'*extra,'reviewed':True}
+    pdf=self.pdf(body,result)
+    streams=re.findall(rb'stream\r?\n(.*?)endstream',pdf,re.S)
+    per_page=[len(re.findall(rb'\(\d,\d{3}\.\d{2}\) Tj',s)) for s in streams]
+    pieces=[n for n in per_page if n]
+    self.assertTrue(all(s.count(b'(Annual value ')<=1 for s in streams),'table header repeated mid-page')
+    self.assertEqual(sum(pieces),25,per_page)
+    if len(pieces)>1: split_seen=True
+    self.assertTrue(all(n>=3 for n in pieces),per_page)
+  self.assertTrue(split_seen,'fixture never split the table, so the test proves nothing')
  def test_export_without_result_or_key(self):
   with patch.dict(os.environ,{'LLM_API_KEY':''}): self.pdf({'conclusion':'Only my words.'})
 

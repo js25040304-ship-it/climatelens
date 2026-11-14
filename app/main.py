@@ -231,7 +231,9 @@ def report(w:Writing):
  if r:
   para('NASA POWER source','Heading2'); para(r['source_url']); para('Retrieved: '+r['retrieved_at']); para('Annual aggregation: '+r['aggregation'])
   para('Excluded years: '+('; '.join(f"{e['year']} (missing or invalid months: {', '.join(map(str,e['missing_or_invalid_months']))})" for e in r['excluded_years']) or 'none'))
-  table=Table([['Year','Annual value ('+r['unit']+')']]+[[str(p['year']),f"{p['value']:,.2f}"] for p in r['annual']],repeatRows=1)
+  class AnnualTable(Table):  # every piece re-applies the rule (header+3 rows before a break, 3 after); reportlab drops it on split pieces, which let a leftover gap take a lone row
+   def split(self,aw,ah): self._rowSplitRange=(4,-3); return Table.split(self,aw,ah)
+  table=AnnualTable([['Year','Annual value ('+r['unit']+')']]+[[str(p['year']),f"{p['value']:,.2f}"] for p in r['annual']],repeatRows=1)
   table.setStyle(TableStyle([('FONTNAME',(0,0),(-1,-1),'Helvetica'),('ALIGN',(1,1),(1,-1),'RIGHT'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e2efeb')),('BOTTOMPADDING',(0,0),(-1,-1),4)])); blocks.append(table)
  else: para('Data source intended: NASA POWER. No verified observations or statistics were available for this report.')
  def footer(canvas,doc): canvas.saveState(); canvas.setFont('Helvetica',8); canvas.drawRightString(doc.pagesize[0]-48,24,f'ClimateLens investigation report  ·  page {doc.page}'); canvas.restoreState()
