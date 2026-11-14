@@ -14,19 +14,21 @@
 
 | 成员 | 主要责任 | 主要文件 | 首先运行什么 | 交付标准 |
 | --- | --- | --- | --- | --- |
-| 1 号：统筹与集成 | 环境、接口、合并代码、最终演示 | `app/main.py` 中应用入口、请求模型与 investigate 接口；`requirements.txt` | 全量测试 + 启动网站 | 另一台电脑能按 README 启动；默认探究完整走通；汇总实际通过和未通过项 |
+| 1 号：统筹与集成 | 环境、接口、合并代码、最终演示 | `app/main.py`、`app/schemas.py`、`app/investigations.py`、`app/state.py`；`requirements.txt` | 全量测试 + 启动网站 | 另一台电脑能按 README 启动；默认探究完整走通；汇总实际通过和未通过项 |
 | 2 号：NASA 数据 | 请求、单位、缺失值、年度聚合与覆盖验证 | `app/data.py`、`tests/test_data.py` | 数据测试 + 真实 NASA 测试 | 新加坡温度先验证通过，再记录五城市×五变量的可用性；保留来源和原始响应 |
 | 3 号：统计分析 | 斜率、HAC 不确定性、显著性与限制 | `app/analysis.py`、统计相关测试 | 统计测试 | 对照独立计算；解释年/十年单位、置信区间、p 值；不把相关说成因果 |
 | 4 号：前端与学生流程 | 页面、图表、状态、结论编辑、响应式 | `app/static/index.html`、`style.css`、`app.js` | 启动网站，按浏览器清单验收 | 图表与设置一致；修改设置后旧结果失效；结论不被 AI 自动覆盖；手机和键盘可操作 |
-| 5 号：AI、PDF 与演示材料 | AI 反馈、无密钥降级、PDF、演示脚本 | `app/main.py` 中 tutor/report 及相关函数；对应测试 | AI/PDF 测试 + 配置可选密钥 | 无密钥也可探究；API 失败能降级；中英文长结论 PDF 可读；不遗漏来源与局限 |
+| 5 号：AI、PDF 与演示材料 | AI 反馈、无密钥降级、PDF、演示脚本 | `app/tutor.py`、`app/reports.py`、`app/evidence.py`；对应测试 | AI/PDF 测试 + 配置可选密钥 | 无密钥也可探究；API 失败能降级；中英文长结论 PDF 可读；不遗漏来源与局限 |
 
-**避免冲突：1 号和 5 号目前都会碰 `app/main.py`。** 1 号负责入口、请求模型、investigate；5 号负责 tutor、explanation、report。改公共模型前先沟通。需要大改时，由 1 号先拆成独立模块、合并后其他人再拉取，不要各自同时拆文件。
+**模块已拆开：** 1 号（莺心）负责入口、接口模型、探究路由与结果存储；5 号负责 `tutor.py`、`reports.py`、`evidence.py`。2、3、4 号原有文件路径保持不变。公共字段以 `app/schemas.py` 和 `/docs` 为准，改字段或返回结构前先找 1 号协调。不要各自复制一套结果存储。
+
+1 号本次工作分支：`feat/integration`。模块拆分在合并到 main 之前，其他同学不要直接从旧版 main 修改 AI/PDF 所在的 main.py；可先做自己模块的测试。
 
 ## 2. 获取代码与组员访问
 
 仓库： https://github.com/js25040304-ship-it/climatelens
 
-仓库为私有时，只有所有者与获授权成员能查看。所有者在仓库 **Settings → Collaborators → Add people** 添加组员的 GitHub 用户名；组员接受邀请后再克隆。仅转发私有仓库链接不会自动开放访问。需要写代码的组员要有写入权限。
+仓库目前公开，任何人都能查看和克隆；直接推送分支仍需协作者权限。仓库为私有时，只有所有者与获授权成员能查看。所有者在仓库 **Settings → Collaborators → Add people** 添加组员的 GitHub 用户名；组员接受邀请后再克隆。仅转发私有仓库链接不会自动开放访问。需要写代码的组员要有写入权限。
 
 ```sh
 git clone https://github.com/js25040304-ship-it/climatelens.git
@@ -82,7 +84,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ### 1 号：先跑全量，再做集成
 
 ```sh
-python -m unittest discover -s tests -v
+python scripts/verify.py
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -224,3 +226,12 @@ git push -u origin feat/nasa-data
 4. 每人把验证记录写进自己的 PR，由 1 号汇总最终结果。
 
 最终演示必须证明：真实数据可加载、图表与统计对应、局限解释正确、学生能自己写结论、报告实际可下载。不能把跳过的测试说成通过，不能把测试合成数据当作 NASA 历史数据。
+
+
+## 9. 集成检查（1 号维护）
+
+`python scripts/verify.py` 先检查实际可导入的依赖，再运行全部测试。缺依赖会以非零状态退出，不能靠跳过集成测试获得绿色结果。默认仅允许真实 NASA 测试跳过；开启 `RUN_LIVE_NASA=1` 后该测试也必须执行。
+
+GitHub Actions 配置在 `.github/workflows/ci.yml`：每次 PR 和 main 更新运行离线集成测试及独立的真实 NASA 检查。离线测试的 NASA 响应是明确标注的合成夹具，仅用于测试；真实 NASA 检查失败不能用合成数据替代。`scripts/smoke.py` 检查实际 HTTP 服务、页面资源、OpenAPI 与无证据 PDF 下载，不代替浏览器交互或 PDF 视觉检查。
+
+本地环境仍受网络与依赖限制。Actions 配置的存在不代表已经运行通过，是否通过以对应提交的 Checks 为准；浏览器完整体验、PDF 逐页排版和真实外部 AI 仍需人工验收。我们没有配置网站自动部署或分支保护。
