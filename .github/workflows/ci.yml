@@ -23,7 +23,7 @@ jobs:
       - run: node --check app/static/app.js
       - run: node --check app/static/ui-utils.js
       - run: node --check app/static/snapshot-preview.js
-      - run: node --test tests/test_ui.cjs
+      - run: node --test tests/test_ui.cjs tests/test_ring.cjs tests/test_soundscape.cjs
       - name: Server startup smoke test
         run: |
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/climatelens-server.log 2>&1 &
