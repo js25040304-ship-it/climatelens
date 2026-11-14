@@ -171,11 +171,39 @@ class LanguageAndInjectionTests(ProviderHarness):
   self.assertEqual(data['mode'],'AI advisory — verify against evidence'); self.assertEqual(data['verified_summary'],explanation(result))
  def test_chinese_student_gets_chinese_fallback(self):
   zh=self.no_key({'conclusion':'气温上升了，因为城市化导致变暖。'})['text']
-  self.assertIn('结论自查',zh); self.assertIn('因果',zh); self.assertIn('check five things',zh)
+  self.assertIn('结论自查',zh); self.assertIn('独立的因果证据',zh); self.assertIn('check five things',zh)
   en=self.no_key({'conclusion':'Temperature rose because of urbanisation.'})['text']
-  self.assertNotIn('结论自查',en); self.assertIn('causal wording',en)
+  self.assertNotIn('结论自查',en); self.assertIn('independent causal evidence',en)
  def test_chinese_question_only(self):
   self.assertIn('结论自查',self.no_key({'message':'我的结论怎么改进？'})['text'])
+
+@unittest.skipUnless(AVAILABLE,'Install requirements.txt to run AI tutor and PDF tests')
+class CausalReminderTests(unittest.TestCase):
+ """The causal reminder is conditional, and cautious negated wording ("cannot prove a cause") does not trigger it."""
+ SHOULD_NOT=['不能证明原因','这一观测分析不能证明原因。','无法说明是什么导致的','this does not prove a cause','This analysis cannot establish a cause.',"It doesn't prove causation."]
+ SHOULD=['气温上升是因为城市化','this proves global warming','虽然不能证明，但我认为是因为城市化导致的','气温不断上升是因为城市化','Temperature rose because of urbanisation.','未来气温上升会造成更多热浪']
+ def setUp(self):
+  from fastapi.testclient import TestClient
+  from app.main import app
+  self.client=TestClient(app)
+ def feedback(self,conclusion):
+  with patch.dict(os.environ,{'LLM_API_KEY':''}): return self.client.post('/api/tutor',json={'conclusion':conclusion}).json()['text']
+ def test_negated_wording_does_not_trigger(self):
+  from app.main import causal_claim
+  for text in self.SHOULD_NOT:
+   with self.subTest(text=text):
+    self.assertFalse(causal_claim(text)); feedback=self.feedback(text)
+    self.assertNotIn('independent causal evidence',feedback); self.assertNotIn('独立的因果证据',feedback)
+ def test_causal_claims_trigger(self):
+  from app.main import causal_claim
+  for text in self.SHOULD:
+   with self.subTest(text=text):
+    self.assertTrue(causal_claim(text)); self.assertIn('independent causal evidence',self.feedback(text))
+ def test_reminder_is_conditional_and_endorses_cautious_wording(self):
+  en=self.feedback('this proves global warming'); zh=self.feedback('气温上升是因为城市化')
+  self.assertIn('if your conclusion attributes the trend to a specific cause',en); self.assertIn('cannot prove a cause',en); self.assertIn('is appropriate',en)
+  self.assertIn('如果你的结论把趋势归因于某个具体原因',zh); self.assertIn('不能证明原因',zh); self.assertIn('是恰当的',zh)
+  self.assertNotIn('Priority: revise causal wording',en); self.assertNotIn('优先修改',zh)
 
 @unittest.skipUnless(AVAILABLE,'Install requirements.txt to run AI tutor and PDF tests')
 class ExplanationTests(unittest.TestCase):
