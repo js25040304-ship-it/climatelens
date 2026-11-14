@@ -148,6 +148,19 @@ nav.dock button.cur{background:var(--ink);color:#fff}
 nav.dock button.seen:not(.cur){color:var(--ink)}
 nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 .credit{position:fixed;right:14px;bottom:22px;font-size:11px;color:var(--muted);max-width:240px;text-align:right;z-index:5}
+/* soundscape control (optional music, muted by default) */
+.sound{position:fixed;right:14px;bottom:72px;z-index:31;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:280px}
+.sound-bar{display:flex;align-items:center;gap:8px;background:rgba(251,250,245,.9);border:1px solid var(--line);border-radius:999px;padding:5px 10px 5px 5px;box-shadow:0 8px 24px rgba(23,59,55,.08)}
+.sound-toggle{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--ink);color:#fff;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:600}
+.sound:not(.on) .sound-toggle{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.sound-meta{display:flex;flex-direction:column;min-width:0}
+.sound-title{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.sound-vol{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.sound-vol input{width:90px;accent-color:var(--teal)}
+.sound:not(.on) .sound-vol{display:none}
+.sound-offer{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13px;box-shadow:0 8px 24px rgba(23,59,55,.1)}
+.sound-offer button{border:0;border-radius:999px;padding:5px 10px;margin:6px 6px 0 0;font-size:12px;font-weight:600;background:var(--ink);color:#fff}
+.sound-offer button+button{background:transparent;color:var(--ink);border:1px solid var(--line)}
 @media (max-width:820px){
  .ring-dots button{font-size:0;width:12px;height:12px;padding:0;background:var(--line)}
  .ring-dots button[aria-current="true"]{background:var(--teal)}
@@ -164,6 +177,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  .scene{align-items:flex-start;padding:76px 0 0;overflow:auto}
  .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
  .credit{display:none}
+ .sound{right:10px;bottom:76px}  /* sits above the full-width step dock */
+ .sound-meta{display:none}
  nav.dock button{padding:7px 8px}
  .lbl{font-size:26px}.callout{font-size:24px}svg.chart{max-height:none}
 }
@@ -315,10 +330,21 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 <nav class="dock" aria-label="Investigation steps">
   <button data-step="1">01 Sky</button><button data-step="2" disabled>02 Island</button><button data-step="3" disabled>03 Predict</button><button data-step="4" disabled>04 Observe</button><button data-step="5" disabled>05 Verify</button><button data-step="6" disabled>06 Case</button>
 </nav>
-<div class="credit">Illustrations are AI-generated concept art. Charts use NASA POWER monthly data (RE community), 2001–2025.</div>
+<div class="credit">Illustrations and music are AI-generated (music: Google Flow Music). Charts use NASA POWER monthly data (RE community), 2001–2025.</div>
+<div class="sound" id="sound" role="group" aria-label="Background music (AI-generated, optional)">
+  <div class="sound-offer" id="soundOffer" hidden>Add calm background music while you explore?<br><button type="button" id="soundOfferOn">Turn on</button><button type="button" id="soundOfferNo">No thanks</button></div>
+  <div class="sound-bar">
+    <button type="button" class="sound-toggle" id="soundToggle" aria-pressed="false" title="Background music is AI-generated and optional"><span aria-hidden="true">♪</span><span id="soundState">Sound off</span></button>
+    <div class="sound-meta">
+      <span class="sound-title" id="soundTitle" aria-live="polite">ClimateLens Theme</span>
+      <label class="sound-vol">Vol <input type="range" id="soundVolume" min="0" max="100" step="5" value="25" aria-label="Music volume"><span id="soundPct">25%</span></label>
+    </div>
+  </div>
+</div>
 
 <script src="/static/ui-utils.js"></script>
 <script src="ring.js"></script>
+<script src="soundscape.js"></script>
 <script>
 const CITIES=[
  {name:'Singapore',country:'Singapore',code:'SG',lat:1.3521,lon:103.8198,img:'img/singapore.webp',x:50,y:68,w:30,d:'0s'},
@@ -364,7 +390,14 @@ function go(n){
   document.querySelectorAll('.dock button').forEach(b=>{const k=+b.dataset.step;b.classList.toggle('cur',k===n);b.classList.toggle('seen',S.seen.has(k));b.disabled=!S.seen.has(k)});
   if(n===4) observe(); if(n===5) verify(); if(n===6) caseFile(); if(n===1) renderIsles();
   ring?.setActive(n===1); if(n===1&&S.city) ring?.show(S.city.name);
+  sound?.scene(n,S.city?.name);  // home theme on the sky, the city's track afterwards, quieter from Predict on
 }
+let sound=null;
+try{
+  let store; try{store=window.localStorage}catch(e){store={getItem:()=>null,setItem:()=>{}}}
+  sound=Soundscape.createPlayer(document,store);
+  sound.mount({root:$('#sound'),toggle:$('#soundToggle'),state:$('#soundState'),title:$('#soundTitle'),volume:$('#soundVolume'),pct:$('#soundPct'),offer:$('#soundOffer'),offerOn:$('#soundOfferOn'),offerNo:$('#soundOfferNo')});
+}catch(e){$('#sound').hidden=true}  // music is optional: any failure leaves the investigation untouched
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(+b.dataset.go));
 document.querySelectorAll('.dock button').forEach(b=>b.onclick=()=>go(+b.dataset.step));
 
