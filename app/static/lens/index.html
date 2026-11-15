@@ -437,13 +437,14 @@ function pickCity(i){
   document.querySelectorAll('.vtag, #caseVars button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.v.id));
   $('#open').disabled=false;$('#caseId').textContent=`CASE #${c.code}-${S.v.id==='ALLSKY_SFC_SW_DWN'?'SUN':S.v.id==='PRECTOTCORR'?'RAIN':S.v.id}`;
   go(2);
+  $('#open').disabled=!S.v;
 }
+window.addEventListener('error',e=>{const n=document.getElementById('loadNote');if(n&&e.message)n.textContent='⚠ '+e.message;});
 function pickVar(id){
-  if(S.v?.id===id)return;
-  resetCase();go(2);
-  S.v=VARS.find(v=>v.id===id);
-  document.querySelectorAll('.vtag').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
-  document.querySelectorAll('#caseVars button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
+  S.v=VARS.find(v=>v.id===id); if(!S.v) return;
+  try{resetCase()}catch(e){}   // optional side effects must never block the case from opening
+  try{go(2)}catch(e){}
+  document.querySelectorAll('.vtag, #caseVars button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
   $('#q').value=S.v.q(S.city.name);$('#open').disabled=false;
   $('#caseId').textContent=`CASE #${S.city.code}-${id==='ALLSKY_SFC_SW_DWN'?'SUN':id==='PRECTOTCORR'?'RAIN':id}`;
 }
