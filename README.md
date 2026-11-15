@@ -1,45 +1,45 @@
-# ClimateLens｜五人小组开发与运行指南
+# ClimateLens | Five-Person Development and Run Guide
 
-**Ask. Investigate. Understand. 提问 → 探究 → 理解。**
+**Ask. Investigate. Understand. Ask → Investigate → Understand.**
 
-我们要做一个让学生使用真实 NASA 环境数据完成科学探究的网站：提出问题、记录预测、观察数据、查看统计证据、写自己的结论，并导出 PDF。AI 只提供辅助解释，不负责计算统计结果，也不能替学生决定结论。
+We are building a website where students use real NASA environmental data to conduct scientific investigations: ask a question, record a prediction, observe data, review statistical evidence, write their own conclusion, and export a PDF. AI provides supporting explanations only. It does not calculate statistics or decide conclusions for students.
 
-> **当前是待联调原型，不是已经验收完成的成品。** 已写好各模块代码；此前验证结果为 12 项数据测试通过、8 项集成测试因缺依赖跳过，Python 和 JavaScript 语法检查通过。开发环境无法连接外网，因此真实 NASA 数据、完整网页、AI API 与 PDF 渲染尚未验证。大家接手后先按下面的命令运行，再修复发现的问题。
+> **This is a prototype awaiting integration testing, not a finished, approved product.** Code for each module has been written. Previous checks showed 12 data tests passing and 8 integration tests skipped because dependencies were missing; Python and JavaScript syntax checks passed. The development environment could not connect to the internet, so real NASA data, the complete website, the AI API, and PDF rendering have not yet been verified. When you take over, first run the commands below, then fix any issues you find.
 
-## 1. 大家先看：不是五个人分别启动五个服务
+## 1. Start Here: Five People Do Not Need to Run Five Services
 
-**每个人都克隆同一个仓库，在自己的电脑上启动同一个应用，只修改自己负责的模块。** 后端使用 FastAPI，同时提供前端页面；目前前端是原生 HTML/CSS/JavaScript，不需要 npm，也没有独立的前端启动命令。
+**Everyone clones the same repository and runs the same application on their own computer, editing only the module they are responsible for.** The backend uses FastAPI and also serves the frontend. The frontend currently uses plain HTML/CSS/JavaScript, so it does not need npm or a separate startup command.
 
-建议先按下面的 1—5 号分工认领，再填上真实姓名。这里是建议分工，不代表已经指定某位组员。
+We suggest claiming roles 1–5 below and then adding each person’s real name. These are suggested responsibilities; no team member has been assigned a role yet.
 
-| 成员 | 主要责任 | 主要文件 | 首先运行什么 | 交付标准 |
+| Member | Main responsibility | Main files | What to run first | Delivery criteria |
 | --- | --- | --- | --- | --- |
-| 1 号：统筹与集成 | 环境、接口、合并代码、最终演示 | `app/main.py`、`app/schemas.py`、`app/investigations.py`、`app/state.py`；`requirements.txt` | 全量测试 + 启动网站 | 另一台电脑能按 README 启动；默认探究完整走通；汇总实际通过和未通过项 |
-| 2 号：NASA 数据 | 请求、单位、缺失值、年度聚合与覆盖验证 | `app/data.py`、`tests/test_data.py` | 数据测试 + 真实 NASA 测试 | 新加坡温度先验证通过，再记录五城市×五变量的可用性；保留来源和原始响应 |
-| 3 号：统计分析 | 斜率、HAC 不确定性、显著性与限制 | `app/analysis.py`、统计相关测试 | 统计测试 | 对照独立计算；解释年/十年单位、置信区间、p 值；不把相关说成因果 |
-| 4 号：前端与学生流程 | 页面、图表、状态、结论编辑、响应式 | `app/static/index.html`、`style.css`、`app.js` | 启动网站，按浏览器清单验收 | 图表与设置一致；修改设置后旧结果失效；结论不被 AI 自动覆盖；手机和键盘可操作 |
-| 5 号：AI、PDF 与演示材料 | AI 反馈、无密钥降级、PDF、演示脚本 | `app/tutor.py`、`app/reports.py`、`app/evidence.py`；对应测试 | AI/PDF 测试 + 配置可选密钥 | 无密钥也可探究；API 失败能降级；中英文长结论 PDF 可读；不遗漏来源与局限 |
+| No. 1: Coordination and integration | Environment, interfaces, merging code, final demo | `app/main.py`, `app/schemas.py`, `app/investigations.py`, `app/state.py`; `requirements.txt` | Full test suite + start the website | Another computer can start the app using this README; the default investigation works end to end; report what passed and failed |
+| No. 2: NASA data | Requests, units, missing values, annual aggregation, and coverage verification | `app/data.py`, `tests/test_data.py` | Data tests + live NASA test | Verify Singapore temperature first, then record availability for five cities × five variables; preserve sources and raw responses |
+| No. 3: Statistical analysis | Slope, HAC uncertainty, significance, and limitations | `app/analysis.py`, statistics-related tests | Statistics tests | Compare with an independent calculation; explain units per year/decade, confidence intervals, and p-values; do not describe correlation as causation |
+| No. 4: Frontend and student workflow | Page, charts, state, conclusion editor, responsive layout | `app/static/index.html`, `style.css`, `app.js` | Start the website and follow the browser checklist | Charts match the settings; changing settings invalidates old results; conclusions are not overwritten by AI; usable on phones and with a keyboard |
+| No. 5: AI, PDF, and demo materials | AI feedback, no-key fallback, PDF, demo script | `app/tutor.py`, `app/reports.py`, `app/evidence.py`; related tests | AI/PDF tests + optionally configure an API key | Investigation works without a key; API failures fall back gracefully; long Chinese and English conclusions remain readable in PDFs; sources and limitations are included |
 
-**模块已拆开：** 1 号（莺心）负责入口、接口模型、探究路由与结果存储；5 号负责 `tutor.py`、`reports.py`、`evidence.py`。2、3、4 号原有文件路径保持不变。公共字段以 `app/schemas.py` 和 `/docs` 为准，改字段或返回结构前先找 1 号协调。不要各自复制一套结果存储。
+**The modules have been separated:** No. 1 (Yingxin) owns the entry point, API schemas, investigation routes, and result storage. No. 5 owns `tutor.py`, `reports.py`, and `evidence.py`. The existing file paths for Nos. 2, 3, and 4 remain unchanged. Use `app/schemas.py` and `/docs` as the source of truth for shared fields. Coordinate with No. 1 before changing fields or response structures. Do not create separate copies of result storage.
 
-1 号本次工作分支：`feat/integration`。模块拆分在合并到 main 之前，其他同学不要直接从旧版 main 修改 AI/PDF 所在的 main.py；可先做自己模块的测试。
+No. 1’s current working branch is `feat/integration`. Before this module split is merged into `main`, other team members should not modify the AI/PDF code in the old `main.py`; they can start by testing their own modules.
 
-## 2. 获取代码与组员访问
+## 2. Get the Code and Set Up Team Access
 
-仓库： https://github.com/js25040304-ship-it/climatelens
+Repository: https://github.com/js25040304-ship-it/climatelens
 
-仓库目前公开，任何人都能查看和克隆；直接推送分支仍需协作者权限。仓库为私有时，只有所有者与获授权成员能查看。所有者在仓库 **Settings → Collaborators → Add people** 添加组员的 GitHub 用户名；组员接受邀请后再克隆。仅转发私有仓库链接不会自动开放访问。需要写代码的组员要有写入权限。
+The repository is currently public, so anyone can view and clone it. Pushing a branch still requires collaborator access. If the repository becomes private, only its owner and authorized members can view it. The owner can add team members’ GitHub usernames under **Settings → Collaborators → Add people**. Members should accept the invitation before cloning. Forwarding a private repository link does not grant access. Members who need to write code need write access.
 
 ```sh
 git clone https://github.com/js25040304-ship-it/climatelens.git
 cd climatelens
 ```
 
-需要 Python 3.11 或更新版本及 Git。建议大家统一 Python 3.12。访问 NASA 与安装依赖都需要网络。未登录 Git 时可用 GitHub Desktop 克隆；不要把密码或 token 写进仓库地址。
+You need Python 3.11 or later and Git. We recommend everyone use Python 3.12. Internet access is required to reach NASA and install dependencies. If you are not signed in to Git, you can clone with GitHub Desktop. Do not put a password or token in the repository URL.
 
-## 3. 所有人都先完成：安装与启动
+## 3. Everyone: Install and Start the App
 
-所有命令均在仓库根目录（能看到 `README.md` 和 `requirements.txt` 的位置）执行。
+Run all commands from the repository root—the directory containing `README.md` and `requirements.txt`.
 
 ### macOS / Linux
 
@@ -60,16 +60,16 @@ Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Windows 可直接使用虚拟环境中的 Python，无需修改 PowerShell 执行策略。首次创建 `.env` 后，不要重复复制覆盖已经填好的密钥。
+On Windows, you can use the Python executable in the virtual environment directly; there is no need to change the PowerShell execution policy. After creating `.env` for the first time, do not copy over it again if it already contains a configured key.
 
-浏览器打开：
+Open these URLs in a browser:
 
-- 网站：http://127.0.0.1:8000
-- API 调试文档：http://127.0.0.1:8000/docs
+- Website: http://127.0.0.1:8000
+- API docs for debugging: http://127.0.0.1:8000/docs
 
-运行时保留终端窗口，停止服务按 `Ctrl+C`。端口占用时改为 `--port 8001`，并访问对应地址。`127.0.0.1` 只代表自己的电脑，发给别人不能当作在线演示链接。上传 GitHub 也不等于已经部署网站。
+Keep the terminal window open while the app is running. Press `Ctrl+C` to stop it. If the port is in use, change it to `--port 8001` and visit the corresponding URL. `127.0.0.1` refers only to your own computer; it is not a public demo link you can send to others. Uploading to GitHub does not deploy the website.
 
-下一次启动（macOS/Linux）：
+To start the app again later (macOS/Linux):
 
 ```sh
 cd climatelens
@@ -77,38 +77,38 @@ source .venv/bin/activate
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-## 4. 每个人具体跑什么
+## 4. What Each Person Should Run
 
-以下 `python` 命令默认已激活虚拟环境。Windows 请把 `python` 换成 `.\.venv\Scripts\python.exe`。测试运行在另一个终端；运行 unittest 无需预先启动网站。
+The `python` commands below assume the virtual environment is active. On Windows, replace `python` with `.\.venv\Scripts\python.exe`. Run tests in a separate terminal; you do not need to start the website before running unittest.
 
-### 1 号：先跑全量，再做集成
+### No. 1: Run Everything, Then Integrate
 
 ```sh
 python scripts/verify.py
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-安装依赖后，普通测试应执行科学/API/PDF检查；真实 NASA 测试默认跳过是设计行为。**如果仍出现“Install requirements.txt…”导致整批跳过，不算验证通过。** 检查当前 Python 是否来自 `.venv`。
+After dependencies are installed, the regular tests should run the science, API, and PDF checks. The live NASA test is skipped by default, as intended. **If the entire test batch is still skipped with a message such as “Install requirements.txt…”, verification has not passed.** Check whether the active Python comes from `.venv`.
 
-最后用网页完成：默认问题 → 确认参数 → 获取数据 → 可选观察 → 展开统计 → 勾选已阅读 → 自己写结论 → 下载 PDF。负责记录安装问题、接口变更、PR 合并与演示版本。
+Use the website to complete the full workflow: default question → confirm settings → fetch data → optionally observe → expand statistics → check the acknowledgment box → write your own conclusion → download the PDF. Track installation issues, API changes, PR merges, and the demo version.
 
-### 2 号：数据校验与真实接口
+### No. 2: Data Validation and Live API
 
-本次数据修复、真实覆盖快照与复现命令见 [NASA 数据验证交接](docs/nasa-data-validation.md)。覆盖是带时间的验证记录，不能保证未来响应始终可用。
+See [NASA Data Validation Handoff](docs/nasa-data-validation.md) for the latest data fixes, live coverage snapshot, and reproduction commands. Coverage is a time-stamped verification record; it does not guarantee that responses will always be available in the future.
 
-离线数据测试（全部是明确标记的合成测试数据）：
+Offline data tests—all use clearly labeled synthetic test data:
 
 ```sh
 python -m unittest discover -s tests -p test_data.py -v
 ```
 
-真实新加坡温度测试，macOS/Linux：
+Live Singapore temperature test, macOS/Linux:
 
 ```sh
 RUN_LIVE_NASA=1 python -m unittest discover -s tests -p test_integration.py -v
 ```
 
-Windows PowerShell：
+Windows PowerShell:
 
 ```powershell
 $env:RUN_LIVE_NASA="1"
@@ -116,103 +116,103 @@ $env:RUN_LIVE_NASA="1"
 Remove-Item Env:RUN_LIVE_NASA
 ```
 
-先确认新加坡、T2M、2001–2025 有 25 个完整年度。再通过 `/docs` 的 `POST /api/investigate` 或网页逐项验证其他城市与变量。不要同时大量请求 NASA。记录城市、变量、年份、返回单位、完整年数、是否成功、错误原因和验证时间。
+First confirm that Singapore, T2M, 2001–2025 returns 25 complete years. Then verify other cities and variables individually through `POST /api/investigate` in `/docs` or through the website. Do not send a large number of simultaneous requests to NASA. Record the city, variable, years, returned unit, number of complete years, whether the request succeeded, any error, and the time of verification.
 
-候选城市：Singapore、Kuala Lumpur、Jakarta、Bangkok、Ho Chi Minh City。**代码有选项不等于数据覆盖已经验证。** 若 NASA 改了单位，应先查官方解释，再调整转换与测试，不能直接删除单位校验。
+Candidate cities: Singapore, Kuala Lumpur, Jakarta, Bangkok, and Ho Chi Minh City. **Having an option in the code does not mean data coverage has been verified.** If NASA changes a unit, check the official explanation before adjusting the conversion and tests. Do not simply remove the unit check.
 
-### 3 号：统计结果与边界条件
-
-```sh
-python -m unittest discover -s tests -p test_integration.py -v
-```
-
-关注 `test_scientific_direction_and_uncertainty`、`test_stable_nonsignificant`、`test_gap_and_insufficient`。当前已有方向、斜率对照及部分边界测试，**还要增加 HAC 标准误、p 值和置信区间的独立基准校验**，不能只凭区间包住斜率就声称方法已验证。
-
-验收重点：斜率每年与每十年的换算；置信区间同样乘 10；不显著不等于没有变化；缺失年度不插值；少于 10 个连续完整年份不输出趋势推断；常数序列不输出误导性 p 值。
-
-### 4 号：浏览器端完整流程
-
-4 号前端更新、验证记录及共享预览的范围见 [前端交接](docs/student-ui-handoff.md)。前端仍由同一个 FastAPI 服务提供，不需要 npm。可额外运行 `node --test tests/test_ui.cjs` 检查数字显示、降级原因、范围校验和过期请求标记。
-
-启动网站后人工检查，记录预期、实际结果、截图和复现步骤：
-
-- 默认问题可确认参数；含糊问题不会偷偷运行分析。
-- 查看年度表，和图中数据点逐项对应；单位、城市和时间一致。
-- 可跳过预测和观察；展开统计后才出现拟合线与统计解释。
-- 修改城市/变量/年份/问题后，旧结果被清除；已写结论保留但需自行复核。
-- 请求中改参数，不得让旧请求覆盖新设置；断网时有清楚提示。
-- 结论可修改，AI 不能覆盖；只看数据尚未写结论时不能显示完成。
-- 窄屏没有横向溢出；Tab 键能到达输入框和按钮；控制台没有错误。
-- 点击 PDF 后确实下载文件，而不是只看按钮能点击。
-
-无需 `npm install` 或 `npm run dev`。如果电脑装有 Node，可补做 `node --check app/static/app.js`；这只是语法检查，不能代替浏览器验收。
-
-### 5 号：AI 与 PDF
+### No. 3: Statistical Results and Edge Cases
 
 ```sh
 python -m unittest discover -s tests -p test_integration.py -v
 ```
 
-模型只选择预设的辅导主题。应用用固定文字显示提示，并单独提供由服务器计算的科学摘要。如果上游返回自由文本或无效主题，页面改用确定性反馈。
+Pay attention to `test_scientific_direction_and_uncertainty`, `test_stable_nonsignificant`, and `test_gap_and_insufficient`. Direction, slope comparisons, and some edge cases already have tests. **You still need to add independent baseline checks for the HAC standard error, p-value, and confidence interval.** Do not claim the method is validated solely because the interval contains the slope.
 
-关注 `test_no_key_fallback`、`test_pdf_incomplete_and_escaping`、`test_settings_mismatch`。先留空 `.env` 中的 `LLM_API_KEY` 验证无密钥模式，再在自己的电脑配置兼容 Chat Completions 的提供商：
+Acceptance criteria: convert slopes consistently between per-year and per-decade units; multiply confidence intervals by 10 as well; explain that a nonsignificant result does not mean there was no change; do not interpolate missing years; do not report trend inference with fewer than 10 consecutive complete years; and do not report misleading p-values for a constant series.
+
+### No. 4: Complete Browser Workflow
+
+See the [Frontend Handoff](docs/student-ui-handoff.md) for the frontend update, verification record, and scope of the shared preview. The frontend is still served by the same FastAPI app; npm is not needed. If Node is available, you can also run `node --test tests/test_ui.cjs` to check number formatting, fallback reasons, range validation, and stale-request marking.
+
+After starting the website, perform the following checks manually and record expected behavior, actual behavior, screenshots, and reproduction steps:
+
+- The default question lets you confirm settings; an ambiguous question does not silently run an analysis.
+- Review the annual table and verify each point against the chart; units, city, and time range match.
+- You can skip the prediction and observation steps; fitted lines and statistical explanations appear only after expanding the statistics section.
+- Changing the city, variable, years, or question clears old results. A written conclusion is preserved but must be reviewed again by the student.
+- Changing settings during a request does not allow an old response to overwrite the new settings; disconnected network access produces a clear message.
+- The conclusion is editable and cannot be overwritten by AI. The workflow cannot show as complete if the student has only viewed the data but has not written a conclusion.
+- There is no horizontal overflow on narrow screens; Tab reaches the inputs and buttons; the console has no errors.
+- Clicking PDF actually downloads a file; do not stop at checking that the button can be clicked.
+
+Do not run `npm install` or `npm run dev`. If Node is installed, you can run `node --check app/static/app.js` as an additional syntax check; this does not replace browser testing.
+
+### No. 5: AI and PDF
+
+```sh
+python -m unittest discover -s tests -p test_integration.py -v
+```
+
+The model only selects from predefined tutoring topics. The app displays fixed text for the prompt and separately provides a scientific summary calculated by the server. If the upstream service returns free text or an invalid topic, the page switches to deterministic feedback.
+
+Focus on `test_no_key_fallback`, `test_pdf_incomplete_and_escaping`, and `test_settings_mismatch`. First leave `LLM_API_KEY` blank in `.env` and verify no-key mode. Then configure a provider that supports Chat Completions on your own computer:
 
 ```dotenv
 LLM_BASE_URL=https://api.openai.com/v1
-LLM_API_KEY=在自己电脑填写密钥，不提交
-LLM_MODEL=填写你有权限使用的模型名称
+LLM_API_KEY=Enter the key on your own computer; do not commit it
+LLM_MODEL=Enter the name of a model you are authorized to use
 ```
 
-模型名按实际账户权限选择；修改 `.env` 后重启服务。外部 AI 请求可能产生提供商费用；无密钥模式不调用模型。
+Choose a model based on your account’s actual permissions; restart the app after editing `.env`. External AI requests may incur provider charges. No-key mode does not call a model.
 
-**`max_tokens` 与 `max_completion_tokens`：** 有些提供商或新模型（例如 OpenAI 的推理模型）会拒绝 `max_tokens`，要求改用 `max_completion_tokens`；有些模型还不接受 `temperature`。另一方面，部分兼容服务不认识 `max_completion_tokens`。因此用 `.env` 中的 `LLM_TOKEN_PARAM` 控制：
+**`max_tokens` and `max_completion_tokens`:** Some providers or newer models (such as OpenAI reasoning models) reject `max_tokens` and require `max_completion_tokens`; some models also reject `temperature`. Other compatible services may not recognize `max_completion_tokens`. Use `LLM_TOKEN_PARAM` in `.env` to control this behavior:
 
-| `LLM_TOKEN_PARAM` | 行为 |
+| `LLM_TOKEN_PARAM` | Behavior |
 | --- | --- |
-| 留空（默认，自动） | 先发送 `max_tokens`。如果提供商返回 400，且错误信息明确提到 `max_tokens`，就改用 `max_completion_tokens`、去掉 `temperature`，**只重试一次**。 |
-| `max_tokens` 或 `max_completion_tokens`（手动） | 始终使用该参数，**不会自动切换**。 |
+| Blank (default, automatic) | Send `max_tokens` first. If the provider returns 400 and the error clearly mentions `max_tokens`, retry once with `max_completion_tokens` and without `temperature`. |
+| `max_tokens` or `max_completion_tokens` (manual) | Always use the specified parameter; there is no automatic switch. |
 
-无论哪种设置，只要 400 错误信息明确提到 `temperature`，都会去掉 `temperature` 重试一次。其他 400、401/403、429、5xx、超时、非 JSON、内容为空或格式异常都不重试，直接降级为确定性反馈。返回里的 `reason` 字段会说明原因：`no_key` / `timeout` / `auth` / `http_error` / `bad_response`。服务器日志打印一行 `AI tutor fallback: reason=… error=<异常类型> status=<状态码>`，不会记录密钥和提供商返回的正文。以上行为都用 mock 测过（`tests/test_tutor_report.py`），**还没有用真实提供商验证**；哪些模型需要哪个参数，以提供商当前文档为准。
+Regardless of this setting, if a 400 error clearly mentions `temperature`, the app removes `temperature` and retries once. Other 400, 401/403, 429, 5xx, timeout, non-JSON, empty-content, or malformed responses are not retried; the app falls back directly to deterministic feedback. The returned `reason` field explains the cause: `no_key` / `timeout` / `auth` / `http_error` / `bad_response`. The server logs one line: `AI tutor fallback: reason=… error=<exception type> status=<status code>`. It does not log the key or the provider’s response body. All of this behavior has been tested with mocks (`tests/test_tutor_report.py`), **but has not yet been tested with a real provider**. Check the provider’s current documentation to see which parameter each model needs.
 
-**提示注入：** 学生文字只放在发给模型的 JSON 字段 `untrusted_student_text` 里，不进入系统提示词。系统提示词要求模型不执行学生文字中的任何指令、不宣称结论正确或已评分、不替学生写结论，并用学生使用的语言回复。确定性反馈不读取学生文字中的指令，测试证明注入文本得到的反馈与普通文本完全相同。mock 测试只能证明我们的代码做了隔离，不能证明真实模型一定遵守。
+**Prompt injection:** Student text is placed only in the JSON field `untrusted_student_text` sent to the model; it is not included in the system prompt. The system prompt instructs the model not to follow instructions in student text, claim that a conclusion is correct or graded, write a conclusion for the student, or respond in a language different from the student’s. Deterministic feedback does not read instructions embedded in student text. Tests confirm that feedback is exactly the same for injected text and ordinary text. Mock tests can show that our code isolates the text, but cannot prove that a real model will always comply.
 
-**PDF 自查：** 图表纵轴用可读刻度（如 `2,400`），带变量名和单位；横轴写 Year。英文用 Helvetica；中文和全角字符用仓库自带的 Noto Sans SC Regular（`app/fonts/`，SIL OFL 1.1），按子集嵌入 PDF，没有中文字体的阅读器（例如部分手机）也能显示。不要换回不嵌入的 STSong-Light：在微信里打开时，中文会全部消失。自动测试只检查内容；排版需要把 PDF 转成图片逐页查看。演示步骤见 [`docs/demo-script.md`](docs/demo-script.md)。
+**PDF checks:** The chart’s y-axis uses readable tick labels (such as `2,400`) and includes the variable name and unit; the x-axis is labeled Year. English uses Helvetica. Chinese and full-width characters use the bundled Noto Sans SC Regular font (`app/fonts/`, SIL OFL 1.1), embedded as a subset in the PDF so they can also display in readers without a Chinese font, including some phones. Do not switch back to the unembedded STSong-Light font: Chinese text disappears when opened in WeChat. Automated tests check content only; convert the PDF to images and inspect every page to verify layout. See [`docs/demo-script.md`](docs/demo-script.md) for demo steps.
 
-验证成功响应、超时、无效密钥、提供商错误都不会破坏数据分析；反馈围绕事实、证据、统计推理、谨慎表达与独立思考。现阶段 AI 输出仍需人工核对，不能宣称绝不会幻觉。问题解析目前是关键词规则，不是 LLM 解析。
+Successful responses, timeouts, invalid keys, and provider errors should not break data analysis. Feedback should focus on facts, evidence, statistical reasoning, cautious wording, and independent thought. AI output still needs human review; do not claim it can never hallucinate. Question parsing currently uses keyword rules, not an LLM.
 
-PDF 至少测三份：完整探究、未写结论、没有有效证据。再测长段中文/英文和 `< > &` 字符。逐页打开检查图表、轴标签、来源 URL、分页、结论是否完整；PDF 文件头正确不代表排版正确。反馈质量或学生是否接受建议都不能阻止导出。
+Test at least three PDFs: a complete investigation, one without a written conclusion, and one without valid evidence. Also test long Chinese and English passages and the characters `< > &`. Open each page and check the chart, axis labels, source URL, page breaks, and whether the conclusion is complete. A correct PDF file header does not guarantee correct layout. Feedback quality and whether students accept suggestions must not prevent PDF export.
 
-## 5. 科学计算规则
+## 5. Scientific Calculation Rules
 
-| 变量 | NASA 参数 | 预期返回单位 | 年度汇总 |
+| Variable | NASA parameter | Expected returned unit | Annual summary |
 | --- | --- | --- | --- |
-| 气温 | `T2M` | `C` | 按每月天数加权的年平均 |
-| 降雨 | `PRECTOTCORR` | `mm/day` | 日均降雨率×当月实际天数，全年相加为 mm/year |
-| 相对湿度 | `RH2M` | `%` | 按每月天数加权的年平均 |
-| 风速 | `WS10M` | `m/s` | 按每月天数加权的年平均 |
-| 太阳辐射 | `ALLSKY_SFC_SW_DWN` | `kW-hr/m^2/day` | 按天数加权的全年平均日能量，不是年度总量 |
+| Air temperature | `T2M` | `C` | Annual average weighted by the number of days in each month |
+| Precipitation | `PRECTOTCORR` | `mm/day` | Daily precipitation rate × actual days in each month, summed over the year to produce mm/year |
+| Relative humidity | `RH2M` | `%` | Annual average weighted by the number of days in each month |
+| Wind speed | `WS10M` | `m/s` | Annual average weighted by the number of days in each month |
+| Solar radiation | `ALLSKY_SFC_SW_DWN` | `kW-hr/m^2/day` | Day-weighted annual average daily energy, not an annual total |
 
-使用 NASA POWER 月度点位 API、`RE` community。单位以真实响应核验为准；表中是当前程序允许的单位。忽略第 13 月年度汇总；剔除有缺失/非法月份的整个年份；不编造或插补观测值。
+Uses the NASA POWER monthly point API and the `RE` community. Verify units against live responses; the table lists units currently accepted by the program. Ignore the 13th-month annual summary. Exclude a year if it contains any missing or invalid month; do not invent or interpolate observations.
 
-OLS 估计趋势，statsmodels 计算 Bartlett/Newey-West HAC 协方差，带有限样本修正；滞后阶数按 `floor(4*(n/100)^(2/9))`、至少 1 阶，并采用近似 t 推断。少量年度样本下推断仍是近似的。数据代表网格点附近环境，不是城市所有地点的实测平均；线性趋势不能用于证明因果或预测未来。反复选择变量与年份可能增加假阳性，目前没有多重检验校正。
+OLS estimates the trend. Statsmodels calculates Bartlett/Newey-West HAC covariance with a finite-sample correction. The lag order is `floor(4*(n/100)^(2/9))`, with at least one lag, and uses approximate t inference. Inference with a small number of annual observations is still approximate. Data represents the environment near a grid point, not measured averages for every location in a city. A linear trend cannot prove causation or predict the future. Repeatedly choosing variables and years may increase false positives; there is currently no multiple-testing correction.
 
-官方说明：https://power.larc.nasa.gov/docs/services/api/temporal/monthly/
+Official documentation: https://power.larc.nasa.gov/docs/services/api/temporal/monthly/
 
-## 6. 接口约定与目录
+## 6. API Conventions and Directory Structure
 
-| 路径 | 用途 |
+| Path | Purpose |
 | --- | --- |
-| `GET /api/catalog` | 城市、变量、单位和定义 |
-| `POST /api/interpret` | 输入 `{question}`，返回待确认参数；不自动分析 |
-| `POST /api/investigate` | 输入 `{city,variable,start,end}`，返回年度数据、统计、来源与结果 ID |
-| `POST /api/tutor` | 使用结果 ID、当前设置和学生文字提供辅助反馈 |
-| `POST /api/report` | 导出 PDF；没有有效证据也允许导出明确标注的不完整报告 |
+| `GET /api/catalog` | Cities, variables, units, and definitions |
+| `POST /api/interpret` | Accepts `{question}` and returns settings for confirmation; does not run an analysis automatically |
+| `POST /api/investigate` | Accepts `{city,variable,start,end}` and returns annual data, statistics, sources, and a result ID |
+| `POST /api/tutor` | Uses the result ID, current settings, and student text to provide supporting feedback |
+| `POST /api/report` | Exports a PDF; export is allowed without valid evidence, with the report clearly marked as incomplete |
 
-详细字段与示例以运行后的 `/docs` 为准。报告和 AI 使用服务器保存的结果，不接受浏览器伪造统计。参数改动返回 409；结果过期返回 410；NASA 不可用返回 503。结果保存在进程内存（最多 200 条），NASA 响应缓存 1 小时（最多 100 条）；重启会清空。页面刷新也会丢失未保存文字。
+For detailed fields and examples, use `/docs` after starting the app. Reports and AI use results stored on the server; they do not accept statistics forged by the browser. Changed settings return 409; expired results return 410; NASA unavailability returns 503. Results are kept in process memory (up to 200 items), and NASA responses are cached for one hour (up to 100 items); restarting the app clears them. Refreshing the page also loses unsaved text.
 
-## 7. 五个人怎么提交，避免互相覆盖
+## 7. How to Contribute Without Overwriting Each Other’s Work
 
-每人从最新 main 新建自己的分支：
+Each person should create a branch from the latest `main`:
 
 ```sh
 git switch main
@@ -220,9 +220,9 @@ git pull origin main
 git switch -c feat/nasa-data
 ```
 
-建议分支名：`feat/integration`、`feat/nasa-data`、`feat/statistics`、`feat/student-ui`、`feat/ai-report`。上面的示例给 2 号用，其他人换成自己的分支名。
+Suggested branch names: `feat/integration`, `feat/nasa-data`, `feat/statistics`, `feat/student-ui`, `feat/ai-report`. The example above is for No. 2; others should use their own branch name.
 
-改完后检查并提交明确的文件。例如 2 号：
+After making changes, review and commit specific files. For example, No. 2:
 
 ```sh
 git status
@@ -233,24 +233,23 @@ git commit -m "fix: validate NASA annual aggregation"
 git push -u origin feat/nasa-data
 ```
 
-在 GitHub 开 Pull Request 到 `main`，写明：改了什么、运行了什么测试、实际结果、还有哪些未验证项。由 1 号集成；遇到冲突先沟通，不要 force push 覆盖别人。其他人继续前先拉取合并后的 main。
+Open a Pull Request to `main` on GitHub and state what changed, which tests you ran, actual results, and anything still unverified. No. 1 handles integration. Discuss conflicts before resolving them; do not force-push over someone else’s work. Before continuing, other team members should pull the updated `main`.
 
-不要上传 `.env`、API 密钥、`.venv`、缓存或个人文件；`.gitignore` 已排除这些常见项目。仓库没有设置自动分支保护，以上是团队约定，不是已经生效的权限限制。
+Do not upload `.env`, API keys, `.venv`, caches, or personal files. `.gitignore` excludes these common items. The repository does not have automatic branch protection configured; these are team agreements, not enforced permission restrictions.
 
-## 8. 建议推进顺序与最终验收
+## 8. Suggested Order of Work and Final Acceptance
 
-1. 1 号帮助大家启动；2、3 号优先把真实新加坡温度与统计验证做好。
-2. 4 号跑完主流程；5 号先测无密钥反馈和 PDF，再接外部 AI。
-3. 默认探究稳定后，再扩展其他变量/城市；双城市比较尚未实现，暂不优先。
-4. 每人把验证记录写进自己的 PR，由 1 号汇总最终结果。
+1. No. 1 helps everyone get started; Nos. 2 and 3 prioritize verifying live Singapore temperature data and statistics.
+2. No. 4 completes the main workflow; No. 5 first tests no-key feedback and PDFs, then connects an external AI service.
+3. Once the default investigation is stable, expand to other variables and cities. Dual-city comparison has not been implemented and is not a priority yet.
+4. Each person records verification results in their PR; No. 1 compiles the final results.
 
-最终演示必须证明：真实数据可加载、图表与统计对应、局限解释正确、学生能自己写结论、报告实际可下载。不能把跳过的测试说成通过，不能把测试合成数据当作 NASA 历史数据。
+The final demo must show that real data can be loaded, charts match the statistics, limitations are explained correctly, students can write their own conclusions, and reports actually download. Do not describe skipped tests as passed or synthetic test data as NASA historical data.
 
+## 9. Integration Checks (Maintained by No. 1)
 
-## 9. 集成检查（1 号维护）
+`python scripts/verify.py` first checks which dependencies can actually be imported, then runs all tests. Missing dependencies result in a nonzero exit status; skipping integration tests cannot produce a green result. By default, only the live NASA test may be skipped. When `RUN_LIVE_NASA=1` is set, that test must run too.
 
-`python scripts/verify.py` 先检查实际可导入的依赖，再运行全部测试。缺依赖会以非零状态退出，不能靠跳过集成测试获得绿色结果。默认仅允许真实 NASA 测试跳过；开启 `RUN_LIVE_NASA=1` 后该测试也必须执行。
+GitHub Actions is configured in `.github/workflows/ci.yml`: every PR and update to `main` runs offline integration tests and a separate live NASA check. The NASA responses used in offline tests are clearly labeled synthetic fixtures for testing only; a failed live NASA check cannot be replaced with synthetic data. `scripts/smoke.py` checks the actual HTTP service, page resources, OpenAPI, and PDF download without evidence. It does not replace browser interaction or visual PDF checks.
 
-GitHub Actions 配置在 `.github/workflows/ci.yml`：每次 PR 和 main 更新运行离线集成测试及独立的真实 NASA 检查。离线测试的 NASA 响应是明确标注的合成夹具，仅用于测试；真实 NASA 检查失败不能用合成数据替代。`scripts/smoke.py` 检查实际 HTTP 服务、页面资源、OpenAPI 与无证据 PDF 下载，不代替浏览器交互或 PDF 视觉检查。
-
-本地环境仍受网络与依赖限制。Actions 配置的存在不代表已经运行通过，是否通过以对应提交的 Checks 为准；浏览器完整体验、PDF 逐页排版和真实外部 AI 仍需人工验收。我们没有配置网站自动部署或分支保护。
+Local environments may still have network and dependency limitations. The existence of the Actions configuration does not mean it has passed; check the corresponding commit’s Checks for status. Full browser testing, page-by-page PDF layout review, and live external AI testing still require manual acceptance. No automatic website deployment or branch protection is configured.
