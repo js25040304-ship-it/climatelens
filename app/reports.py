@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from .data import VARIABLES
-from .evidence import explanation
+from .evidence import explanation, trend_unit
 from .schemas import Report
 from .state import RESULTS, result_for
 
@@ -111,7 +111,7 @@ def report(w:Report):
  if comparison:
   from reportlab.platypus import KeepTogether
   years=[row['year'] for row in r['annual']]
-  unit={'C':'°C','kW-hr/m^2/day':'kWh/m²/day'}.get(r['unit'],r['unit'])
+  unit=trend_unit(r['unit'])
   rows=[['City','Change per decade','95% confidence interval']]
   for record in (r,comparison):
    stats=record['stats']

@@ -15,6 +15,7 @@
     return display;
   }
   const unit = value => ({C: '°C', 'mm/year': 'mm/year', 'kW-hr/m^2/day': 'kWh/m²/day'}[value] || value || '');
+  const trendUnit = value => value === '%' ? 'percentage points' : unit(value);
   function excluded(items) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     if (!items?.length) return ['No years excluded. Every retained year has 12 valid months.'];
@@ -39,7 +40,7 @@
     return '';
   }
   function gate() { let epoch = 0; return {next: () => ++epoch, current: () => epoch, isCurrent: ticket => ticket === epoch}; }
-  const api = {number, pValue, unit, excluded, reason, scopeError, gate};
+  const api = {number, pValue, unit, trendUnit, excluded, reason, scopeError, gate};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ClimateUI = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

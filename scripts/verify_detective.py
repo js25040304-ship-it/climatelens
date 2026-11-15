@@ -35,7 +35,11 @@ with sync_playwright() as playwright:
                 page.get_by_role("button", name="Download annual CSV").click()
             with annual_csv.value.path().open(newline="") as stream:
                 assert [dict(row, value=float(row["value"])) for row in csv.DictReader(stream)] == [
-                    {"year": str(row["year"]), "value": row["value"], "unit": result["unit"]}
+                    {
+                        "year": str(row["year"]), "value": row["value"], "unit": result["unit"],
+                        "city": city, "indicator": variable, "source_url": result["source_url"],
+                        "retrieved_at": result["retrieved_at"], "source_mode": result["source_mode"],
+                    }
                     for row in result["annual"]
                 ]
             page.get_by_text("Data details", exact=True).click()
