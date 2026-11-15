@@ -59,7 +59,7 @@ function discoverHome(){
  return `<div class="dv">
  <section class="dv-story" id="dv-story" aria-label="Explore Singapore">
   <div class="dv-stage" id="dv-stage">
-   <div class="dv-cam" id="dv-cam"><img class="dv-plate" src="${DV_IMG.island}" alt="AI-generated illustration of a moss-covered floating island inspired by Singapore"><div class="dv-mist"></div></div>
+   <div class="dv-cam" id="dv-cam"><img class="dv-plate" src="${DV_IMG.island}" alt="AI-generated illustration of a moss-covered floating island inspired by Singapore"><div class="dv-mist"></div><span class="dv-ai-stamp" aria-hidden="true">AI-GENERATED ART</span></div>
    <div class="dv-veil" id="dv-veil"></div>
    <div class="dv-fog" id="dv-fog"></div>
    <div class="dv-layer dv-hero" id="dv-hero">

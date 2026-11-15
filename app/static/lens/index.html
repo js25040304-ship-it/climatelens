@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- ClimateLens team project. AI-generated media provenance: /static/AI_ASSETS.md. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -42,6 +43,8 @@ h2{font-size:clamp(26px,3.4vw,44px);line-height:1.08}
 @keyframes pulse{0%,100%{opacity:.75;scale:1}50%{opacity:1;scale:1.06}}
 .isle{position:absolute;left:0;top:0;border:0;background:none;padding:0;will-change:transform}
 .isle .art{transition:transform .45s cubic-bezier(.2,.8,.2,1),filter .45s}
+.isle .art{position:relative}
+.isle .art::after{content:"AI-GENERATED";position:absolute;right:12%;bottom:15%;padding:3px 6px;border-radius:4px;background:rgba(23,59,55,.76);color:#fff;font:700 clamp(7px,.75vw,10px)/1.2 var(--sans);letter-spacing:.08em;pointer-events:none}
 .isle img,.isle .blob{display:block;width:100%;pointer-events:none;filter:drop-shadow(0 16px 20px rgba(23,59,55,.25));animation:bob 6s ease-in-out infinite;animation-delay:var(--d,0s)}
 .isle:hover .art{transform:scale(1.08);filter:brightness(1.06) drop-shadow(0 0 22px rgba(200,241,105,.55))}
 .isle:focus-visible{outline:none}
@@ -150,6 +153,7 @@ nav.dock button.cur{background:var(--ink);color:#fff}
 nav.dock button.seen:not(.cur){color:var(--ink)}
 nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 .credit{position:fixed;right:14px;bottom:22px;font-size:11px;color:var(--muted);max-width:240px;text-align:right;z-index:5}
+.ai-watermark{position:fixed;left:14px;bottom:22px;z-index:31;padding:6px 9px;border:1px solid rgba(23,59,55,.25);border-radius:6px;background:rgba(251,250,245,.87);color:var(--ink);font:700 10px/1.3 var(--sans);letter-spacing:.05em;pointer-events:none}
 /* soundscape control (optional music, muted by default) */
 .sound{position:fixed;right:14px;bottom:72px;z-index:31;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:280px}
 .sound-bar{display:flex;align-items:center;gap:8px;background:rgba(251,250,245,.9);border:1px solid var(--line);border-radius:999px;padding:5px 10px 5px 5px;box-shadow:0 8px 24px rgba(23,59,55,.08)}
@@ -179,6 +183,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  .scene{align-items:flex-start;padding:76px 0 0;overflow:auto}
  .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
  .credit{display:none}
+ .ai-watermark{left:10px;bottom:18px;font-size:9px;max-width:120px}
+ body:not([data-scene="1"]) .ai-watermark{top:64px;bottom:auto}
  .sound{right:10px;bottom:76px}  /* sits above the full-width step dock */
  body[data-scene="1"] .sound{bottom:126px}  /* and above the island ring controls on the sky */
  body.ring-focus .sound{opacity:0;pointer-events:none}  /* the case file sheet needs the space; it comes back on landing */
@@ -336,12 +342,13 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
   <button data-step="1">01 Sky</button><button data-step="2" disabled>02 Island</button><button data-step="3" disabled>03 Predict</button><button data-step="4" disabled>04 Observe</button><button data-step="5" disabled>05 Verify</button><button data-step="6" disabled>06 Case</button>
 </nav>
 <div class="credit">Illustrations and music are AI-generated (music: Google Flow Music). Charts use NASA POWER monthly data (RE community), 2001–2025.</div>
+<div class="ai-watermark" aria-label="AI-generated illustrations and background music">AI-GENERATED VISUALS · MUSIC</div>
 <div class="sound" id="sound" role="group" aria-label="Background music (AI-generated, optional)">
   <div class="sound-offer" id="soundOffer" hidden>Add calm background music while you explore?<br><button type="button" id="soundOfferOn">Turn on</button><button type="button" id="soundOfferNo">No thanks</button></div>
   <div class="sound-bar">
     <button type="button" class="sound-toggle" id="soundToggle" aria-pressed="false" title="Background music is AI-generated and optional"><span aria-hidden="true">♪</span><span id="soundState">Sound off</span></button>
     <div class="sound-meta">
-      <span class="sound-title" id="soundTitle" aria-live="polite">ClimateLens Theme</span>
+      <span class="sound-title" id="soundTitle" aria-live="polite">ClimateLens Theme</span><span class="sound-title">AI-generated · Google Flow Music</span>
       <label class="sound-vol">Vol <input type="range" id="soundVolume" min="0" max="100" step="5" value="25" aria-label="Music volume"><span id="soundPct">25%</span></label>
     </div>
   </div>
