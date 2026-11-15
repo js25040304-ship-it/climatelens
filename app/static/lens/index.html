@@ -90,6 +90,7 @@ body:not([data-scene="1"]) .clouds{opacity:0;transform:translateY(8vh)}
 /* scene 2 */
 #s2 .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:3vw;align-items:center;width:min(1180px,92vw)}
 #s2 .hero{position:relative}
+#s2 .row{position:sticky;bottom:8px;z-index:25;background:var(--paper);border-radius:14px;padding:10px 8px;box-shadow:0 -6px 18px rgba(23,59,55,.10)}
 #s2 .hero img{width:100%;animation:bob 7s ease-in-out infinite}
 .vtag{position:absolute;max-width:max-content;left:clamp(0px,var(--x),calc(100% - 110px))!important;font-size:14px;font-weight:600;border:1px solid rgba(23,59,55,.25);background:rgba(251,250,245,.85);padding:8px 12px;border-radius:999px;transition:.25s;animation:bob 5s ease-in-out infinite;animation-delay:var(--d)}
 .vtag:hover{background:#fff}
@@ -182,6 +183,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  .metrics{grid-template-columns:1fr}
  .scene{align-items:flex-start;padding:76px 0 0;overflow:auto}
  .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
+ #s2 .row{bottom:90px}  /* the dock is full width here, so the action row sits above it */
  .credit{display:none}
  .sound{right:10px;bottom:76px}  /* sits above the full-width step dock */
  body[data-scene="1"] .sound{bottom:126px}  /* and above the island ring controls on the sky */
@@ -430,7 +432,10 @@ function pickCity(i){
   document.querySelectorAll('.vtag').forEach(b=>b.onclick=()=>pickVar(b.dataset.v));
   $('#caseVars').innerHTML=VARS.map(v=>`<li><button type="button" data-v="${v.id}" aria-pressed="false">${v.tag}</button></li>`).join('');
   $('#caseVars').querySelectorAll('button').forEach(b=>b.onclick=()=>pickVar(b.dataset.v));
-  $('#q').value='';$('#open').disabled=true;$('#caseId').textContent=`CASE #${c.code}-—`;
+  S.v=VARS[0];
+  $('#q').value=S.v.q(c.name);
+  document.querySelectorAll('.vtag, #caseVars button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.v.id));
+  $('#open').disabled=false;$('#caseId').textContent=`CASE #${c.code}-${S.v.id==='ALLSKY_SFC_SW_DWN'?'SUN':S.v.id==='PRECTOTCORR'?'RAIN':S.v.id}`;
   go(2);
 }
 function pickVar(id){
