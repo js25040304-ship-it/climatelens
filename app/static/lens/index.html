@@ -417,8 +417,11 @@ function renderDataDetails(r){
   issue.textContent=[r.excluded_years.length?`${r.excluded_years.length} year(s) excluded. See Data details for the affected months.`:'',r.analysis_error].filter(Boolean).join(' ');
 }
 $('#downloadAnnual').onclick=()=>{
-  const r=rec(),{variable,start,end}=r.settings;
-  const lines=['year,value,unit',...r.annual.map(([year,value])=>`${year},${value},${r.unit}`)];
+  const r=rec(),{city,variable,start,end}=r.settings;
+  const header='year,value,unit,city,indicator,source_url,retrieved_at,source_mode';
+  const metadata=[r.unit,city,variable,r.src,r.retrieved,r.source_mode]
+    .map(value=>'"'+String(value??'').replaceAll('"','""')+'"').join(',');
+  const lines=[header,...r.annual.map(([year,value])=>`${year},${value},${metadata}`)];
   const url=URL.createObjectURL(new Blob([lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'}));
   const link=document.createElement('a');
   link.href=url;link.download=`ClimateLens-${S.city.code}-${variable}-${start}-${end}.csv`;
@@ -495,7 +498,7 @@ $('#compareForm').onsubmit=async event=>{
       status.textContent='The two records cover different complete years. A comparison requires matching annual coverage.';
       return;
     }
-    const unit=ClimateUI.unit(primary.unit);
+    const unit=ClimateUI.trendUnit(primary.unit);
     for(const record of [primary,other]){
       const row=document.createElement('tr');
       const stats=record.stats;
@@ -522,7 +525,7 @@ $('#compareForm').onsubmit=async event=>{
   }
 };
 function verify(){
-  const r=rec(),svg=$('#verSvg'),s=r.stats,u=UNIT[r.unit]||r.unit;
+  const r=rec(),svg=$('#verSvg'),s=r.stats;
   showArchiveNotice('#verifyArchive',r);
   $('#cityComparison').hidden=!s;
   if(s&&!$('#compareCity').options.length){
@@ -554,7 +557,7 @@ function verify(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const t=$('#tl');if(t)t.style.strokeDashoffset=0;const f=$('#fan');if(f)f.style.opacity=1}));
   if(!s)return;
   const [lo,hi]=s.ci95_year.map(x=>x*10),p=ClimateUI.pValue(s.p_value);
-  const rateUnit=r.unit==='%'?'percentage points':u;
+  const rateUnit=ClimateUI.trendUnit(r.unit);
   const signedSlope=(s.slope_decade>0?'+':'')+evidenceNumber(s,s.slope_decade);
   $('#metrics').innerHTML=`<div class="metric"><span>Change per decade</span><b>${signedSlope} ${rateUnit}</b></div><div class="metric"><span>95% interval per decade</span><b>${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)}</b></div><div class="metric"><span>p-value (HAC)</span><b>${p}</b></div>`;
   let txt=`Across ${s.n} years, the fitted trend is ${signedSlope} ${rateUnit} per decade. The 95% confidence interval runs from ${evidenceNumber(s,lo)} to ${evidenceNumber(s,hi)} ${rateUnit} per decade. `;
@@ -570,18 +573,18 @@ function verify(){
   $('#plain').textContent=txt;
 }
 function caseFile(){
-  const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;
-  const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}/decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
+  const r=rec(),s=r.stats,u=ClimateUI.trendUnit(r.unit);
+  const items=[['QUESTION',$('#q').value],['PREDICTION',S.guess?`Drawn line: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'Skipped'],['OBSERVATION',S.found?`${S.found} was the ${S.v.hi} year`:'Explored the annual record'],['EVIDENCE',s?`${s.slope_decade>0?'+':''}${evidenceNumber(s,s.slope_decade)} ${u}/decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)} ${u}/decade`:'No valid trend inference'],['LIMITS','One grid cell, not a city average. A trend is not a cause or a forecast.'],['SOURCE',`NASA POWER monthly point data, retrieved ${r.retrieved.slice(0,10)}`]];
   $('#evid').innerHTML=items.map(([k,v])=>`<div><small>${k}</small>${v.replace(/</g,'&lt;')}</div>`).join('');
   $('#stamp').classList.toggle('on',S.closed);$('#exportRow').hidden=!S.closed;$('#exportNote').hidden=true;$('#close').disabled=S.closed||!enough($('#concl').value);
   $('#reviewHint').hidden=$('#reviewed').checked;  // a reminder only: export stays available and the server decides the report status
 }
 function enough(t){const cjk=(t.match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;const words=t.replace(/[\u3400-\u9fff\uf900-\ufaff]/g,' ').trim().split(/\s+/).filter(Boolean).length;return cjk>=8||words>=6||(cjk>=4&&words>=3)}
 $('#concl').oninput=e=>{S.closed=false;$('#stamp').classList.remove('on');$('#exportRow').hidden=true;const ok=enough(e.target.value);$('#close').disabled=!ok;$('#closeHint').textContent=ok?'Ready. Closing the case unlocks the report.':'Write at least one full sentence to close the case (about 6 words or 8 characters).'};
-function reportText(){const r=rec(),s=r.stats,u=UNIT[r.unit]||r.unit;return [`ClimateLens case report: ${S.city.name} / ${S.v.label}`,`Question: ${$('#q').value}`,`Prediction: ${S.guess?fmt((S.guess[2025]-S.guess[2001])/2.4)+' '+u+' per decade (drawn)':'Skipped'}`,s?`Evidence: ${evidenceNumber(s,s.slope_decade)} ${u} per decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}, p ${s.p_value<.001?'< 0.001':'= '+ClimateUI.pValue(s.p_value)} (n=${s.n})`:'Evidence: no valid trend inference',`Limits: one NASA POWER grid cell, not a city average; a trend is not a cause or a forecast.`,`Student conclusion: ${$('#concl').value.trim()}`,`Source: ${r.src}`].join('\n')}
+function reportText(){const r=rec(),s=r.stats,u=ClimateUI.trendUnit(r.unit);return [`ClimateLens case report: ${S.city.name} / ${S.v.label}`,`Question: ${$('#q').value}`,`Prediction: ${S.guess?fmt((S.guess[2025]-S.guess[2001])/2.4)+' '+u+' per decade (drawn)':'Skipped'}`,s?`Evidence: ${evidenceNumber(s,s.slope_decade)} ${u} per decade, 95% CI ${evidenceNumber(s,s.ci95_year[0]*10)} to ${evidenceNumber(s,s.ci95_year[1]*10)}, p ${s.p_value<.001?'< 0.001':'= '+ClimateUI.pValue(s.p_value)} (n=${s.n})`:'Evidence: no valid trend inference',`Limits: one NASA POWER grid cell, not a city average; a trend is not a cause or a forecast.`,`Student conclusion: ${$('#concl').value.trim()}`,`Source: ${r.src}`].join('\n')}
 $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;n.textContent='Preparing your PDF report…';b.disabled=true;
   try{
-    const r=rec(),u=UNIT[r.unit]||r.unit,fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
+    const r=rec(),u=ClimateUI.trendUnit(r.unit),fileName=`ClimateLens-${S.city.code}-${S.v.id}.pdf`;
     const body={result_id:r.id,settings:r.settings,question:$('#q').value,hypothesis:(S.guess?`Drawn prediction: ${fmt((S.guess[2025]-S.guess[2001])/2.4)} ${u} per decade`:'').slice(0,200),observation:S.found?`${S.found} was the ${S.v.hi} year in the record.`:'',conclusion:$('#concl').value.trim(),reviewed:$('#reviewed').checked};
     if(comparisonResult)body.comparison_result_id=comparisonResult.id;
     const rep=await api('report',body);
