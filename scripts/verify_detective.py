@@ -15,7 +15,9 @@ with sync_playwright() as playwright:
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.on("request", lambda request: requests.append(request.url) if request.method == "POST" else None)
         page.goto("http://127.0.0.1:8000/static/lens/index.html")
-        page.get_by_role("button", name=f"Open a case for {city}").click()
+        page.locator("#ringDots").get_by_role("button", name=city, exact=True).click()
+        expect(page.locator("#ringName")).to_have_text(city)
+        page.locator("#ringOpen").click()
         page.locator(f".vtag[data-v='{variable}']").click()
         with page.expect_response(lambda response: response.url.endswith("/api/investigate"), timeout=75000) as investigation:
             page.locator("#open").click()
