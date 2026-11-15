@@ -81,6 +81,10 @@ class IntegrationTests(unittest.TestCase):
   from app.analysis import analyze
   with self.assertRaises(ValueError):analyze([{'year':2001+i,'value':i} for i in range(5)])
   with self.assertRaises(ValueError):analyze([{'year':2001+2*i,'value':i} for i in range(15)])
+ def test_constant_series_rejects_trend_inference(self):
+  from app.analysis import analyze
+  rows = [{"year": 2001 + i, "value": 25.0} for i in range(10)]
+  with self.assertRaisesRegex(ValueError, "Constant observations"):analyze(rows)
  def test_interpret_ambiguity(self):
   r=self.client.post('/api/interpret',json={'question':'Compare Singapore and Jakarta temperature 2001 to 2025'}).json()
   self.assertIsNone(r['proposed']['city']);self.assertTrue(r['needs_review'])
