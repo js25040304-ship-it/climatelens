@@ -32,7 +32,19 @@ class ContractTests(unittest.TestCase):
         for path in ['/api/interpret', '/api/investigate', '/api/tutor', '/api/report']:
             self.assertIn('post', schema['paths'][path])
         self.assertEqual(self.client.get('/api/health').json()['status'], 'ok')
-        self.assertIn('ClimateLens', self.client.get('/').text)
+        root = self.client.get('/')
+        self.assertEqual(root.status_code, 200)
+        # Root is the five-island entry; the base tag keeps its relative assets working from '/'.
+        self.assertIn('ringStage', root.text)
+        self.assertIn('<base href="/static/lens/">', root.text)
+        self.assertEqual(self.client.get('/static/lens/ring.js').status_code, 200)
+        lab = self.client.get('/static/lens/singapore/index.html')
+        self.assertEqual(lab.status_code, 200)
+        self.assertIn('Singapore island lab', lab.text)
+        for page in ['Discover', 'Explore map', 'Evidence', 'My notebook', 'Data & methods']:
+            self.assertIn(page, lab.text)
+        # The classic five-chapter investigation keeps its own URL.
+        self.assertIn('ClimateLens', self.client.get('/static/index.html').text)
         self.assertEqual(self.client.get('/static/app.js').status_code, 200)
 
     def test_mocked_investigation_to_tutor_and_report(self):

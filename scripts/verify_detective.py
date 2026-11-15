@@ -17,7 +17,8 @@ with sync_playwright() as playwright:
         page.goto("http://127.0.0.1:8000/static/lens/index.html")
         page.locator("#ringDots").get_by_role("button", name=city, exact=True).click()
         expect(page.locator("#ringName")).to_have_text(city)
-        page.locator("#ringOpen").click()
+        # Singapore's main button now leaves for the island lab, so its case is the secondary action.
+        page.locator("#ringDeep" if city == "Singapore" else "#ringOpen").click()
         page.locator(f".vtag[data-v='{variable}']").click()
         with page.expect_response(lambda response: response.url.endswith("/api/investigate"), timeout=75000) as investigation:
             page.locator("#open").click()

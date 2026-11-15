@@ -64,8 +64,22 @@ On Windows, you can use the Python executable in the virtual environment directl
 
 Open these URLs in a browser:
 
-- Website: http://127.0.0.1:8000
+- Website (entry): http://127.0.0.1:8000
+- Singapore island lab: http://127.0.0.1:8000/static/lens/singapore/index.html
+- Classic five-chapter investigation: http://127.0.0.1:8000/static/index.html
 - API docs for debugging: http://127.0.0.1:8000/docs
+
+**The published entry is the five-island page.** The journey we ship is
+**five islands → Singapore → floating-island lab → Discover / Explore / Evidence / My notebook / Data & methods**:
+
+1. `/` shows five city islands on a turning ring (`app/static/lens/index.html`).
+2. Clicking (or tabbing to) Singapore opens its case file; the main button,
+   *Explore the Singapore island lab →*, hands over to `app/static/lens/singapore/index.html`.
+   *Open the Singapore case →* stays as the secondary action and runs the six-scene investigation.
+3. The island lab is one HTML page with twelve locations and five hash routes
+   (`#home` Discover, `#explore` Explore map, `#evidence` Evidence, `#notebook` My notebook,
+   `#sources` Data & methods). A location pin opens its sheet; *Investigate this place →* goes to Explore.
+4. The other four cities keep the six-scene investigation; only Singapore has the island lab.
 
 Keep the terminal window open while the app is running. Press `Ctrl+C` to stop it. If the port is in use, change it to `--port 8001` and visit the corresponding URL. `127.0.0.1` refers only to your own computer; it is not a public demo link you can send to others. Uploading to GitHub does not deploy the website.
 

@@ -60,8 +60,8 @@ jobs:
           trap 'kill "$SERVER_PID"' EXIT
           python scripts/smoke.py
           python scripts/verify_browser.py
-      - name: Verify detective cases and downloaded PDF evidence
-        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.head_ref == 'feat/data-details' || github.event_name == 'push'
+      - name: Verify detective cases, the island-first journey and downloaded PDF evidence
+        if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/detective-ui' || github.head_ref == 'feat/data-details' || github.head_ref == 'feat/island-first-journey' || github.event_name == 'push'
         env:
           LLM_API_KEY: ''
         run: |
@@ -71,4 +71,5 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID"' EXIT
           python scripts/smoke.py
+          python scripts/verify_journey.py
           python scripts/verify_detective.py

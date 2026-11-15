@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<base href="/static/lens/">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ClimateLens — Trend Detective prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -214,7 +215,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <div class="row">
       <button class="btn" id="ringOpen" type="button">Open the case →</button>
       <button class="btn ghost" id="ringBack" type="button">← Back to the islands</button>
-      <a class="btn ghost" id="ringDeep" href="singapore/index.html" hidden></a>
+      <button class="btn ghost" id="ringDeep" type="button" hidden></button>
     </div>
   </aside>
   <div class="mini" aria-hidden="true"><b>Where is it?</b><svg id="ringMap" viewBox="0 0 170 200"></svg></div>
@@ -381,7 +382,10 @@ try{
     art:c=>isleArt(c), vars:VARS.map(v=>v.tag), isDone:name=>S.done.has(name),
     reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,
     onOpen: i => pickCity(i),
-    deepLink: c => c.name==='Singapore' ? {href:'singapore/index.html', label:'Explore Singapore in depth →'} : null,
+    // Singapore is the flagship: its main button leaves for the floating-island lab,
+    // and the six-scene case stays available as the secondary action.
+    primary: c => c.name==='Singapore' ? {label:'Explore the Singapore island lab →', href:'singapore/index.html'} : null,
+    deepLink: c => c.name==='Singapore' ? {label:'Open the Singapore case →', onClick:()=>pickCity(c.i)} : null,
   });
 }catch(e){console.error('Island ring failed to start',e)}
 function renderIsles(){ring?.rebuild()}

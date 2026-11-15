@@ -33,7 +33,8 @@
 
   /* Browser controller. Expects the #ring* elements in index.html.
    * opts: {cities:[{name,country,lat,lon,i}], art(city)->html, vars:[tag], onOpen(i), isDone(name), reduced,
-   *        deepLink(city)->{href,label}|null (optional extra link on the case file)} */
+   *        primary(city)->{label,href}|null (optional: the main button navigates instead of opening the case),
+   *        deepLink(city)->{label,href|onClick}|null (optional secondary action)} */
   function createRing(doc, win, opts) {
     const $ = id => doc.getElementById(id);
     const el = {stage: $('ringStage'), world: $('ringWorld'), glow: $('ringGlow'), isles: $('ringIsles'),
@@ -127,9 +128,17 @@
       M.setAttribute('x', Math.min(mx(c.lon) + 9, 125)); M.setAttribute('y', my(c.lat) + 4);
       el.pName.textContent = c.name; el.pCoords.textContent = `${c.country} · ${fmt(c)}`;
       el.pEyebrow.textContent = 'Case file · NASA POWER 2001–2025' + (opts.isDone(c.name) ? ' · ✓ case opened' : '');
-      el.open.textContent = `Open the ${c.name} case →`;
-      const deep = opts.deepLink ? opts.deepLink(c) : null;   // e.g. Singapore's Island Lab
-      if (el.deep) { el.deep.hidden = !deep; if (deep) { el.deep.href = deep.href; el.deep.textContent = deep.label; } }
+      const primary = opts.primary ? opts.primary(c) : null;   // e.g. Singapore opens its island lab
+      el.open.textContent = primary ? primary.label : `Open the ${c.name} case →`;
+      el.open.dataset.href = primary ? primary.href : '';
+      const deep = opts.deepLink ? opts.deepLink(c) : null;   // secondary action, e.g. the six-scene case
+      if (el.deep) {
+        el.deep.hidden = !deep;
+        if (deep) {
+          el.deep.textContent = deep.label;
+          el.deep.onclick = () => { if (deep.href) win.location.assign(deep.href); else if (deep.onClick) deep.onClick(); };
+        }
+      }
     }
 
     function poke() { idleUntil = performance.now() + IDLE_MS; }
@@ -176,7 +185,12 @@
     el.play.addEventListener('click', () => { setAuto(!auto); poke(); });
     dots.forEach(d => d.addEventListener('click', () => fly(+d.dataset.k)));
     mapDots.forEach(d => d.addEventListener('click', () => fly(+d.dataset.k)));
-    el.open.addEventListener('click', () => { if (focused !== null) opts.onOpen(C[focused].i); });
+    el.open.addEventListener('click', () => {
+      if (focused === null) return;
+      const c = C[focused], primary = opts.primary ? opts.primary(c) : null;
+      if (primary && primary.href) { win.location.assign(primary.href); return; }
+      opts.onOpen(c.i);
+    });
     el.back.addEventListener('click', () => land());
     doc.addEventListener('keydown', e => {
       if (!active || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;

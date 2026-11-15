@@ -15,7 +15,16 @@ for attempt in range(30):
 else:
     raise RuntimeError('Server did not become ready')
 
-for path, marker in [('/', b'ClimateLens'), ('/static/app.js', b'investigate'), ('/openapi.json', b'/api/report')]:
+for path, marker in [
+    ('/', b'ringStage'),                                  # root is the five-island entry
+    ('/', b'<base href="/static/lens/">'),                # its relative assets resolve from /
+    ('/static/lens/ring.js', b'createRing'),
+    ('/static/lens/singapore/index.html', b'Singapore island lab'),
+    ('/static/lens/singapore/index.html', b'Investigat'),  # the five-page lab shell is served
+    ('/static/index.html', b'ClimateLens'),                # classic investigation kept reachable
+    ('/static/app.js', b'investigate'),
+    ('/openapi.json', b'/api/report'),
+]:
     with urlopen(BASE + path, timeout=5) as response:
         assert marker in response.read(), path
 

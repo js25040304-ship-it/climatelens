@@ -10,7 +10,7 @@ const read = p => readFileSync(p, 'utf8');
 test('the Singapore Island Lab page exists and loads its script', () => {
   const html = read(join(LAB, 'index.html'));
   assert.match(html, /<script src="lab\.js"><\/script>/);
-  assert.match(html, /href="\.\.\/index\.html"/, 'links back to the five-island page (the static mount has no directory index)');
+  assert.match(html, /<a class="header-cta" href="\/">/, 'links back to the root five-island entry');
   assert.ok(existsSync(join(LAB, 'lab.js')));
 });
 
@@ -53,11 +53,14 @@ test('the MODIS surface-temperature images listed in imagery.json are all presen
   assert.ok(existsSync(join(LAB, 'data', 'singapore.geojson')));
 });
 
-test('only the Singapore case card links to the Island Lab', () => {
+test('the Singapore card leads to the Island Lab as its primary action', () => {
   const html = read(join(LENS, 'index.html'));
   assert.ok(html.includes('id="ringDeep"'));
-  assert.match(html, /deepLink:\s*c\s*=>\s*c\.name==='Singapore'\s*\?\s*\{href:'singapore\/index\.html'/);
-  assert.ok(read(join(LENS, 'ring.js')).includes('opts.deepLink'));
+  assert.match(html, /primary:\s*c\s*=>\s*c\.name==='Singapore'\s*\?\s*\{label:'Explore the Singapore island lab →', href:'singapore\/index\.html'\}/);
+  assert.match(html, /deepLink:\s*c\s*=>\s*c\.name==='Singapore'\s*\?\s*\{label:'Open the Singapore case →'/);
+  const ring = read(join(LENS, 'ring.js'));
+  assert.ok(ring.includes('opts.primary'), 'the ring honours a primary navigation');
+  assert.ok(ring.includes('opts.deepLink'), 'the six-scene case stays as the secondary action');
 });
 
 test('the Island Lab offers the Singapore track, muted by default', () => {

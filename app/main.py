@@ -20,7 +20,12 @@ app.include_router(reports_router)
 
 @app.get("/")
 def index():
-    return FileResponse(ROOT / "static/index.html")
+    """Root is the five-island entry: islands -> Singapore -> island lab -> five pages.
+
+    The classic five-chapter investigation page stays reachable at /static/index.html
+    so existing links and the browser checks keep working.
+    """
+    return FileResponse(ROOT / "static" / "lens" / "index.html")
 
 @app.get("/api/health")
 def health():
