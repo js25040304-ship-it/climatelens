@@ -30,15 +30,52 @@ h1{font-size:clamp(34px,5.4vw,72px);line-height:1.02}
 h2{font-size:clamp(26px,3.4vw,44px);line-height:1.08}
 .lede{color:var(--muted);line-height:1.6;max-width:46ch}
 /* scene 1 */
-#s1 .intro{position:absolute;top:9vh;left:0;right:0;text-align:center;padding:0 20px;z-index:3;pointer-events:none}
-.isle{position:absolute;border:0;background:none;padding:0;transform:translate(-50%,-50%);transition:transform .35s,filter .35s}
-.isle img,.isle .blob{display:block;width:100%;animation:bob 6s ease-in-out infinite;animation-delay:var(--d,0s)}
-.isle:hover{transform:translate(-50%,-52%) scale(1.04)}
-.isle:focus-visible{outline:3px solid var(--accent);outline-offset:6px;border-radius:20px}
-.isle .tag{position:absolute;z-index:2;left:50%;bottom:-6px;transform:translateX(-50%);white-space:nowrap;font-size:13px;font-weight:600;background:var(--accent);color:#1d3a0e;padding:6px 10px;border-radius:999px}
-.isle .tag small{opacity:.7;margin-left:6px}
-.isle.far{filter:blur(.6px) saturate(.9);opacity:.92}
-.isle.done .tag::after{content:" ✓ case opened";}
+#s1 .intro{position:absolute;top:9vh;left:0;right:0;text-align:center;padding:0 20px;z-index:3;pointer-events:none;transition:opacity .5s,transform .5s}
+#s1 .intro h1{font-size:clamp(30px,4vw,54px)}
+#s1 .intro h1 br{display:none}
+#s1 .intro .lede{max-width:60ch}
+/* scene 1: the island ring (ring.js moves #ringWorld like a camera) */
+#ringStage{position:absolute;inset:0;z-index:2;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+#ringStage.dragging{cursor:grabbing}
+#ringWorld{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+#ringGlow{position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);background:radial-gradient(closest-side,transparent 60%,rgba(200,241,105,.8) 65%,transparent 70%,transparent 80%,rgba(200,241,105,.55) 84%,transparent 90%);filter:drop-shadow(0 0 10px rgba(200,241,105,.9));animation:pulse 3.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.75;scale:1}50%{opacity:1;scale:1.06}}
+.isle{position:absolute;left:0;top:0;border:0;background:none;padding:0;will-change:transform}
+.isle .art{transition:transform .45s cubic-bezier(.2,.8,.2,1),filter .45s}
+.isle img,.isle .blob{display:block;width:100%;pointer-events:none;filter:drop-shadow(0 16px 20px rgba(23,59,55,.25));animation:bob 6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.isle:hover .art{transform:scale(1.08);filter:brightness(1.06) drop-shadow(0 0 22px rgba(200,241,105,.55))}
+.isle:focus-visible{outline:none}
+.isle:focus-visible .art{filter:brightness(1.06) drop-shadow(0 0 18px rgba(200,241,105,1))}
+.isle .tag{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);white-space:nowrap;font-weight:700;background:rgba(251,250,245,.92);padding:.4em .9em;border-radius:999px;opacity:0;transition:opacity .25s}
+.isle:hover:not(.cur) .tag{opacity:1!important}
+.isle.done .tag::after{content:" ✓"}
+body.ring-focus .isle .tag{opacity:0!important}
+.ring-label{position:absolute;z-index:6;pointer-events:none;opacity:0;transition:opacity .6s ease}
+.ring-label.show{opacity:1}
+.ring-label h2{font-weight:700;font-size:clamp(22px,2.8vw,38px);line-height:1.05;margin:0 0 4px}
+.ring-label p{margin:0;font-size:13px;font-weight:600;color:var(--muted)}
+.ring-panel{position:absolute;z-index:8;right:4vw;top:50%;width:min(380px,40vw);background:rgba(251,250,245,.94);border:1px solid var(--line);border-radius:22px;padding:24px 24px 20px;box-shadow:0 24px 60px rgba(23,59,55,.18);opacity:0;visibility:hidden;transform:translate(24px,-50%);transition:opacity .45s .25s,transform .45s .25s,visibility 0s .7s}
+.ring-panel h2{font-weight:700;margin:6px 0 4px}
+.ring-panel .coords{font-size:14px;font-weight:600;color:var(--muted);margin:0 0 14px}
+.ring-panel ul{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px}
+.ring-panel li{font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:#fff}
+.ring-panel .small{margin:0 0 16px}
+body.ring-focus .ring-panel{opacity:1;visibility:visible;transform:translate(0,-50%);transition:opacity .45s .25s,transform .45s .25s,visibility 0s}
+body.ring-focus #s1 .intro,body.ring-focus .ring-label{opacity:0!important}
+body.ring-focus #s1 .intro{transform:translateY(-20px)}
+body.ring-focus .sky{filter:blur(3px) saturate(.9)}
+body.ring-focus .mini{opacity:0;pointer-events:none}
+.ring-ctrl{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:8px;background:rgba(251,250,245,.9);border:1px solid var(--line);border-radius:999px;padding:5px}
+.ring-ctrl .arrow{width:36px;height:36px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:18px}
+.ring-ctrl .play{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:13px}
+.ring-dots{display:flex;gap:4px}
+.ring-dots button{border:0;background:none;padding:6px 8px;border-radius:999px;font-size:13px;font-weight:600;color:var(--muted)}
+.ring-dots button[aria-current="true"]{background:var(--accent);color:#1d3a0e}
+.ring-zoom{position:absolute;left:16px;bottom:26px;z-index:7;font-size:12px;font-weight:600;color:var(--muted);background:rgba(251,250,245,.8);border-radius:999px;padding:6px 10px}
+.mini{position:absolute;right:16px;top:72px;z-index:6;width:140px;background:rgba(251,250,245,.92);border:1px solid var(--line);border-radius:14px;padding:8px;transition:opacity .4s}
+.mini b{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
+.mini svg{display:block;width:100%}
+.mini circle{cursor:pointer}
 .blob{aspect-ratio:1.15;background:radial-gradient(60% 34% at 50% 30%,#7aa65a 0 60%,transparent 62%),radial-gradient(48% 48% at 50% 52%,#8a8a78 0 55%,transparent 57%);filter:drop-shadow(0 10px 14px rgba(23,59,55,.18))}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 .hint{font-size:14px;font-weight:600;color:var(--teal);margin-top:10px}
@@ -125,7 +162,14 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 .sound-offer button{border:0;border-radius:999px;padding:5px 10px;margin:6px 6px 0 0;font-size:12px;font-weight:600;background:var(--ink);color:#fff}
 .sound-offer button+button{background:transparent;color:var(--ink);border:1px solid var(--line)}
 @media (max-width:820px){
-.isle .tag{font-size:9px;padding:4px 7px}.isle .tag small{display:none}
+ .ring-dots button{font-size:0;width:12px;height:12px;padding:0;background:var(--line)}
+ .ring-dots button[aria-current="true"]{background:var(--teal)}
+ .mini,.ring-zoom{display:none}
+ .ring-label{text-align:center}
+ .ring-ctrl{bottom:74px}
+ .ring-panel{left:12px;right:12px;width:auto;top:auto;bottom:128px;padding:18px;transform:translateY(24px)}
+ body.ring-focus .ring-panel{transform:none}
+ #s1 .intro .lede{display:none}
  #s1 .intro{top:11vh}
  #s2 .wrap,.casefile{grid-template-columns:1fr}
  #s2 .hero{max-width:420px;margin:0 auto}
@@ -134,6 +178,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
  .scene>.stage,.scene>.wrap{margin-bottom:130px}  /* keep the last text and buttons clear of the fixed step dock */
  .credit{display:none}
  .sound{right:10px;bottom:76px}  /* sits above the full-width step dock */
+ body[data-scene="1"] .sound{bottom:126px}  /* and above the island ring controls on the sky */
+ body.ring-focus .sound{opacity:0;pointer-events:none}  /* the case file sheet needs the space; it comes back on landing */
  .sound-meta{display:none}
  nav.dock button{padding:7px 8px}
  .lbl{font-size:26px}.callout{font-size:24px}svg.chart{max-height:none}
@@ -149,11 +195,34 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 <section class="scene on" id="s1" aria-label="Choose an island">
   <div class="intro">
     <div class="eyebrow">Be an Earth system trend detective</div>
-    <h1>Every island<br>is a <em>case</em>.</h1>
+    <h1>Every island <br>is a <em>case</em>.</h1>
     <p class="lede" style="margin:0 auto">Five Southeast Asian cities. Explore NASA POWER climate data from 2001–2025. Pick an island to open an investigation.</p>
-    <div class="hint">Click an island to begin</div>
+    <div class="hint">Drag to turn the islands · scroll to zoom · click an island to fly in</div>
   </div>
-  <div id="isles" style="position:absolute;inset:0;z-index:2"></div>
+  <div id="ringStage" role="region" aria-roledescription="carousel" aria-label="Five city islands">
+    <div id="ringWorld"><div id="ringGlow"></div><div id="ringIsles"></div></div>
+  </div>
+  <div class="ring-label" id="ringLabel" aria-hidden="true"><h2 id="ringLabelName"></h2><p id="ringLabelCoords"></p></div>
+  <aside class="ring-panel" id="ringPanel" aria-label="Case file">
+    <div class="eyebrow" id="ringEyebrow">Case file · NASA POWER 2001–2025</div>
+    <h2 id="ringName"></h2>
+    <p class="coords" id="ringCoords"></p>
+    <ul id="ringVars" aria-label="Variables you can investigate"></ul>
+    <p class="small">Monthly observations for one grid cell near the city, not a city-wide average. The island is an illustration.</p>
+    <div class="row">
+      <button class="btn" id="ringOpen" type="button">Open the case →</button>
+      <button class="btn ghost" id="ringBack" type="button">← Back to the islands</button>
+    </div>
+  </aside>
+  <div class="mini" aria-hidden="true"><b>Where is it?</b><svg id="ringMap" viewBox="0 0 170 200"></svg></div>
+  <div class="ring-zoom" id="ringZoom">Zoom 100%</div>
+  <div class="ring-ctrl">
+    <button class="arrow" id="ringPrev" type="button" aria-label="Previous island">‹</button>
+    <div class="ring-dots" id="ringDots"></div>
+    <button class="arrow" id="ringNext" type="button" aria-label="Next island">›</button>
+    <button class="play" id="ringPlay" type="button" aria-pressed="true">❚❚</button>
+  </div>
+  <div id="ringLive" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
 </section>
 
 <!-- 2 ISLAND -->
@@ -276,14 +345,15 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
 </div>
 
 <script src="/static/ui-utils.js"></script>
+<script src="ring.js"></script>
 <script src="soundscape.js"></script>
 <script>
 const CITIES=[
- {name:'Singapore',code:'SG',lat:1.3521,lon:103.8198,img:'img/singapore.webp',x:50,y:68,w:30,d:'0s'},
- {name:'Kuala Lumpur',code:'KL',lat:3.139,lon:101.6869,img:'img/kuala-lumpur.webp',x:16,y:44,w:14,d:'-1.5s'},
- {name:'Bangkok',code:'BKK',lat:13.7563,lon:100.5018,img:'img/bangkok.webp',x:83,y:40,w:14,d:'-3s'},
- {name:'Ho Chi Minh City',code:'HCMC',lat:10.8231,lon:106.6297,img:'img/ho-chi-minh-city.webp',x:82,y:78,w:12,d:'-2s'},
- {name:'Jakarta',code:'JKT',lat:-6.2088,lon:106.8456,img:'img/jakarta.webp',x:13,y:80,w:12,d:'-4s'}];
+ {name:'Singapore',country:'Singapore',code:'SG',lat:1.3521,lon:103.8198,img:'img/singapore.webp',x:50,y:68,w:30,d:'0s'},
+ {name:'Kuala Lumpur',country:'Malaysia',code:'KL',lat:3.139,lon:101.6869,img:'img/kuala-lumpur.webp',x:16,y:44,w:14,d:'-1.5s'},
+ {name:'Bangkok',country:'Thailand',code:'BKK',lat:13.7563,lon:100.5018,img:'img/bangkok.webp',x:83,y:40,w:14,d:'-3s'},
+ {name:'Ho Chi Minh City',country:'Vietnam',code:'HCMC',lat:10.8231,lon:106.6297,img:'img/ho-chi-minh-city.webp',x:82,y:78,w:12,d:'-2s'},
+ {name:'Jakarta',country:'Indonesia',code:'JKT',lat:-6.2088,lon:106.8456,img:'img/jakarta.webp',x:13,y:80,w:12,d:'-4s'}];
 const VARS=[
  {id:'T2M',label:'Air temperature',tag:'Temperature',q:c=>`Has ${c} become hotter between 2001 and 2025?`,hi:'warmest',x:6,y:18},
  {id:'PRECTOTCORR',label:'Precipitation',tag:'Rainfall',q:c=>`Is ${c} getting wetter or drier, 2001–2025?`,hi:'wettest',x:70,y:10},
@@ -299,12 +369,18 @@ function isleArt(c,cls){
   return ok?`<img src="${c.img}" alt="" style="--d:${c.d}">`:`<div class="blob" style="--d:${c.d}"></div>`;
 }
 function probe(){CITIES.forEach(c=>{const i=new Image();i.onload=()=>{imgOk[c.img]=true;renderIsles()};i.onerror=()=>{imgOk[c.img]=false};i.src=c.img})}
-const MOB=[[50,58,60],[22,40,26],[78,40,26],[78,75,24],[22,75,24]];  // narrow: bottom islands sit above the step dock
-function renderIsles(){
-  const m=innerWidth<820;
-  $('#isles').innerHTML=CITIES.map((c,i)=>`<button class="isle ${i?'far':''} ${S.done.has(c.name)?'done':''}" style="left:${m?MOB[i][0]:c.x}%;top:${m?MOB[i][1]:c.y}%;width:${m?MOB[i][2]:c.w}vw;min-width:${m?0:(i?110:240)}px" data-city="${i}" aria-label="Open a case for ${c.name}">${isleArt(c)}<span class="tag">${c.name}<small>${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'}</small></span></button>`).join('');
-  document.querySelectorAll('.isle').forEach(b=>b.onclick=()=>pickCity(+b.dataset.city));
-}
+// Sky scene: islands on a slowly turning ring, south→north order with Singapore in front (ring.js).
+const RING_ORDER=['Singapore','Kuala Lumpur','Ho Chi Minh City','Bangkok','Jakarta'];
+let ring=null;
+try{
+  ring=Ring.createRing(document,window,{
+    cities:RING_ORDER.map(name=>{const i=CITIES.findIndex(c=>c.name===name);return {...CITIES[i],i}}),
+    art:c=>isleArt(c), vars:VARS.map(v=>v.tag), isDone:name=>S.done.has(name),
+    reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,
+    onOpen: i => pickCity(i),
+  });
+}catch(e){console.error('Island ring failed to start',e)}
+function renderIsles(){ring?.rebuild()}
 function go(n){
   if((n>1 && !S.city) || (n>2 && !S.evidence)) return;
   if(n===1 && S.request){
@@ -315,6 +391,7 @@ function go(n){
   document.body.dataset.scene=n; S.seen.add(n);
   document.querySelectorAll('.dock button').forEach(b=>{const k=+b.dataset.step;b.classList.toggle('cur',k===n);b.classList.toggle('seen',S.seen.has(k));b.disabled=!S.seen.has(k)});
   if(n===4) observe(); if(n===5) verify(); if(n===6) caseFile(); if(n===1) renderIsles();
+  ring?.setActive(n===1); if(n===1&&S.city) ring?.show(S.city.name);
   sound?.scene(n,S.city?.name);  // home theme on the sky, the city's track afterwards, quieter from Predict on
 }
 let sound=null;
@@ -630,7 +707,7 @@ $('#pdf').onclick=async()=>{const n=$('#exportNote'),b=$('#pdf');n.hidden=false;
 $('#copy').onclick=async()=>{const n=$('#exportNote');n.hidden=false;try{await navigator.clipboard.writeText(reportText());n.textContent='Report copied. Paste it into a document or message.'}catch(e){n.textContent='Copy was blocked by this browser. Select your conclusion and copy it manually.'}};
 $('#close').onclick=()=>{S.closed=true;$('#stamp').classList.add('on');S.done.add(S.city.name);$('#exportRow').hidden=false;$('#close').disabled=true;$('#closeHint').textContent='Case closed. Download your report, or go back to the sky for the next island.'};
 $('#toVerify').onclick=()=>go(5);$('#toCase').onclick=()=>go(6);
-probe();renderIsles();
+probe();renderIsles();ring?.setActive(true);
 </script>
 </body>
 </html>
