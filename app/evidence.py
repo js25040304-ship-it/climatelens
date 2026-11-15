@@ -2,10 +2,14 @@
 import math
 
 
+def trend_unit(unit):
+ return {'%':'percentage points','C':'°C','kW-hr/m^2/day':'kWh/m²/day'}.get(unit,unit)
+
+
 def explanation(r):
  """Plain-language summary of server statistics only. Interval endpoints are scaled to per-decade like the slope; numbers never use scientific notation."""
  if not r or not r.get('stats'): return 'No valid trend inference is available. Record the data limitation; do not infer a trend from missing evidence.'
- s=r['stats']; slope=s['slope_decade']; lo,hi=(v*10 for v in s['ci95_year']); unit={'C':'°C'}.get(r['unit'],r['unit']); p=s['p_value']
+ s=r['stats']; slope=s['slope_decade']; lo,hi=(v*10 for v in s['ci95_year']); unit=trend_unit(r['unit']); p=s['p_value']
  biggest=max(abs(slope),abs(lo),abs(hi)); digits=max(0,2-math.floor(math.log10(biggest))) if biggest else 0
  def num(v): return f'{v+0.:,.{digits}f}'
  period=f"{r['settings']['start']}–{r['settings']['end']}" if r.get('settings') else 'the selected period'
