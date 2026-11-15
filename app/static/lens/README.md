@@ -23,3 +23,14 @@ Choose a city island and climate variable, optionally draw a prediction, inspect
 - The big city name only fades in while an island sits in the front slot. White name tags only show on islands turning towards the front.
 - The animation loop only runs while the sky scene is showing. If the ring fails to start, the error is logged and the rest of the page still works.
 - Tests: `node --test tests/test_ring.cjs` (ring order, short-way turns, slot sizes, tag and label rules, drag settling, zoom limits, page wiring).
+
+## Singapore Island Lab (`singapore/index.html`)
+
+- The Singapore case file on the island ring has an extra link, **Explore Singapore in depth →**, that opens a Singapore-only lab (other cities show no link). The lab links back with **← All five islands**. Directory URLs are not served by the static mount, so both links point at `index.html`.
+- Pages: **Discover** (floating Singapore island: scroll to push the camera in, click one of 12 places for its landmark photo and NASA MODIS surface temperature), **Explore map**, **Evidence**, **My notebook**, **Data & methods**.
+- **Statistics come from the server.** The five NASA POWER series for Singapore (2001–2025) are requested from `/api/investigate`; the lab embeds no results. If the server cannot validate a series, the page says so and offers a retry.
+- The Discover temperature card reads MODIS Terra 8-day daytime land surface temperature (NASA GIBS, six 2024 dates in `data/modis/`) through the GIBS colour bar, so values are approximate (≈ °C at a 1 km pixel, which may mix land and water). Cloudy dates are skipped and counted; there are no made-up curves.
+- Images: `img/island.webp` and `img/rock-*.webp` are AI-generated illustrations by the team; the 12 landmark photos in `img/landmarks/` are from Wikimedia Commons (CC BY / CC BY-SA, resized) and are credited on the page. Island outline: Singapore Land Authority and Urban Redevelopment Authority, Singapore Open Data Licence. Total size about 2.5 MB.
+- **Music:** the lab reuses `../soundscape.js` and `../audio/singapore.mp3` (no new audio files). It is muted by default with the same control and the same remembered choice as the five-island page; Evidence, My notebook and Data & methods play it at the quieter focus level. `soundscape.js` now resolves track paths next to itself so pages in sub-folders find the audio.
+- `lab.js` was derived from the team's Island Lab share file; edit the files here directly.
+- Tests: `node --test tests/test_island_lab.cjs` (page and script present, statistics fetched from the server, no borrowed brand or made-up figures, every photo present and credited, MODIS files present, only Singapore links to the lab).

@@ -60,6 +60,8 @@ body.ring-focus .isle .tag{opacity:0!important}
 .ring-panel ul{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px}
 .ring-panel li{font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:#fff}
 .ring-panel .small{margin:0 0 16px}
+.ring-panel a.btn{text-decoration:none}
+.ring-panel #ringDeep{margin-top:2px}
 body.ring-focus .ring-panel{opacity:1;visibility:visible;transform:translate(0,-50%);transition:opacity .45s .25s,transform .45s .25s,visibility 0s}
 body.ring-focus #s1 .intro,body.ring-focus .ring-label{opacity:0!important}
 body.ring-focus #s1 .intro{transform:translateY(-20px)}
@@ -212,6 +214,7 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <div class="row">
       <button class="btn" id="ringOpen" type="button">Open the case →</button>
       <button class="btn ghost" id="ringBack" type="button">← Back to the islands</button>
+      <a class="btn ghost" id="ringDeep" href="singapore/index.html" hidden></a>
     </div>
   </aside>
   <div class="mini" aria-hidden="true"><b>Where is it?</b><svg id="ringMap" viewBox="0 0 170 200"></svg></div>
@@ -378,6 +381,7 @@ try{
     art:c=>isleArt(c), vars:VARS.map(v=>v.tag), isDone:name=>S.done.has(name),
     reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,
     onOpen: i => pickCity(i),
+    deepLink: c => c.name==='Singapore' ? {href:'singapore/index.html', label:'Explore Singapore in depth →'} : null,
   });
 }catch(e){console.error('Island ring failed to start',e)}
 function renderIsles(){ring?.rebuild()}

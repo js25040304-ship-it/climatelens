@@ -18,6 +18,9 @@
   const SWITCH_FADE = 2.5;   // seconds of crossfade when the track changes
   const LOOP_FADE = 3;       // seconds of overlap when a track loops back to its start
   const FOCUS_LEVEL = 0.4;   // predict / observe / verify / case scenes play quieter
+  // Track paths are relative to this script, so a page in a sub-folder (singapore/) finds the same files.
+  const BASE = root.document && root.document.currentScript ? new URL('.', root.document.currentScript.src).href : '';
+  function trackUrl(file, base) { return base ? new URL(file, base).href : file; }
 
   /* Pure rules (unit-tested in tests/test_soundscape.cjs). */
   function plan(scene, city) {
@@ -64,8 +67,8 @@
     function target() { return level(prefs.volume, plan(scene, city).focus); }
     function start(key, fade) {
       const incoming = decks[1 - active], outgoing = decks[active];
-      const file = TRACKS[key].file;
-      if (!incoming.src.endsWith(file)) incoming.src = file;
+      const file = trackUrl(TRACKS[key].file, BASE);
+      if (incoming.src !== file && !incoming.src.endsWith(file)) incoming.src = file;
       incoming.currentTime = 0; incoming.volume = 0;
       const playing = incoming.play();
       if (playing && playing.catch) playing.catch(() => { started = false; render('Tap anywhere to start'); });
@@ -142,7 +145,7 @@
     };
   }
 
-  const api = {TRACKS, KEY, DEFAULT_VOLUME, FOCUS_LEVEL, SWITCH_FADE, LOOP_FADE, plan, level, loadPrefs, savePrefs, createPlayer};
+  const api = {TRACKS, KEY, DEFAULT_VOLUME, FOCUS_LEVEL, SWITCH_FADE, LOOP_FADE, plan, level, loadPrefs, savePrefs, trackUrl, createPlayer};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Soundscape = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

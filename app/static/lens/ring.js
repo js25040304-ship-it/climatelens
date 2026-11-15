@@ -32,13 +32,14 @@
   function clampZoom(z) { return Number.isFinite(z) ? Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)) : 1; }
 
   /* Browser controller. Expects the #ring* elements in index.html.
-   * opts: {cities:[{name,country,lat,lon,i}], art(city)->html, vars:[tag], onOpen(i), isDone(name), reduced} */
+   * opts: {cities:[{name,country,lat,lon,i}], art(city)->html, vars:[tag], onOpen(i), isDone(name), reduced,
+   *        deepLink(city)->{href,label}|null (optional extra link on the case file)} */
   function createRing(doc, win, opts) {
     const $ = id => doc.getElementById(id);
     const el = {stage: $('ringStage'), world: $('ringWorld'), glow: $('ringGlow'), isles: $('ringIsles'),
       label: $('ringLabel'), labelName: $('ringLabelName'), labelCoords: $('ringLabelCoords'),
       panel: $('ringPanel'), pEyebrow: $('ringEyebrow'), pName: $('ringName'), pCoords: $('ringCoords'), pVars: $('ringVars'),
-      open: $('ringOpen'), back: $('ringBack'), prev: $('ringPrev'), next: $('ringNext'), play: $('ringPlay'),
+      open: $('ringOpen'), back: $('ringBack'), deep: $('ringDeep'), prev: $('ringPrev'), next: $('ringNext'), play: $('ringPlay'),
       dots: $('ringDots'), map: $('ringMap'), zoom: $('ringZoom'), live: $('ringLive')};
     const C = opts.cities, N = C.length, reduced = !!opts.reduced;
     const fmt = c => `${Math.abs(c.lat).toFixed(2)}°${c.lat < 0 ? 'S' : 'N'} · ${c.lon.toFixed(2)}°E`;
@@ -127,6 +128,8 @@
       el.pName.textContent = c.name; el.pCoords.textContent = `${c.country} · ${fmt(c)}`;
       el.pEyebrow.textContent = 'Case file · NASA POWER 2001–2025' + (opts.isDone(c.name) ? ' · ✓ case opened' : '');
       el.open.textContent = `Open the ${c.name} case →`;
+      const deep = opts.deepLink ? opts.deepLink(c) : null;   // e.g. Singapore's Island Lab
+      if (el.deep) { el.deep.hidden = !deep; if (deep) { el.deep.href = deep.href; el.deep.textContent = deep.label; } }
     }
 
     function poke() { idleUntil = performance.now() + IDLE_MS; }
