@@ -102,6 +102,9 @@ textarea:focus{border-color:var(--teal)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
 .small{font-size:13px;color:var(--muted);line-height:1.5}
+.vchips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px;padding:0;list-style:none}
+.vchips button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 14px;font:600 12px/1 var(--sans);cursor:pointer}
+.vchips button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 /* chart scenes */
 #s4,#s5{overflow-y:auto;align-items:flex-start;padding:76px 0 90px}
 #s4 .stage,#s5 .stage{margin:auto}
@@ -236,7 +239,8 @@ nav.dock button:disabled{opacity:.35;cursor:not-allowed}
     <div class="panel">
       <div class="eyebrow" id="cityLine">Singapore · 1.35°N 103.82°E</div>
       <h2>What do you want<br>to <em>investigate</em>?</h2>
-      <p class="small">Tap a tag on the island. Your question is written for you. Edit it if you like.</p>
+      <p class="small">Tap a tag on the island, or choose one below. Your question is written for you. Edit it if you like.</p>
+      <ul class="vchips" id="caseVars" aria-label="Variables you can investigate"></ul>
       <textarea id="q" rows="2" aria-label="Research question"></textarea>
       <div class="row"><button class="btn" id="open" disabled>Open the case ↗</button><button class="btn ghost" data-go="1">← Back to the sky</button></div>
       <p class="small" id="loadNote" role="status" aria-live="polite"></p>
@@ -424,6 +428,8 @@ function pickCity(i){
   $('#cityLine').textContent=`${c.name} · ${Math.abs(c.lat).toFixed(2)}°${c.lat<0?'S':'N'} ${c.lon.toFixed(2)}°E`;
   $('#heroIsle').innerHTML=isleArt(c).replace('<div class="blob"','<div class="blob" style="width:70%;margin:auto"')+VARS.map(v=>`<button class="vtag" style="--x:${v.x}%;top:${v.y}%;--d:-${(Math.random()*4).toFixed(1)}s" data-v="${v.id}" aria-pressed="false">${v.tag}</button>`).join('');
   document.querySelectorAll('.vtag').forEach(b=>b.onclick=()=>pickVar(b.dataset.v));
+  $('#caseVars').innerHTML=VARS.map(v=>`<li><button type="button" data-v="${v.id}" aria-pressed="false">${v.tag}</button></li>`).join('');
+  $('#caseVars').querySelectorAll('button').forEach(b=>b.onclick=()=>pickVar(b.dataset.v));
   $('#q').value='';$('#open').disabled=true;$('#caseId').textContent=`CASE #${c.code}-—`;
   go(2);
 }
@@ -432,6 +438,7 @@ function pickVar(id){
   resetCase();go(2);
   S.v=VARS.find(v=>v.id===id);
   document.querySelectorAll('.vtag').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
+  document.querySelectorAll('#caseVars button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===id));
   $('#q').value=S.v.q(S.city.name);$('#open').disabled=false;
   $('#caseId').textContent=`CASE #${S.city.code}-${id==='ALLSKY_SFC_SW_DWN'?'SUN':id==='PRECTOTCORR'?'RAIN':id}`;
 }
