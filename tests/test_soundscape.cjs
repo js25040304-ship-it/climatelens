@@ -65,3 +65,8 @@ test('the page offers music but never starts it on load', () => {
   assert.match(html, /id="soundToggle"[^>]*aria-pressed="false"/);
   assert.match(html, /music: Google Flow Music/);
 });
+
+test('track files resolve next to soundscape.js, so pages in sub-folders find the same audio', () => {
+  assert.equal(S.trackUrl('audio/singapore.mp3', 'http://127.0.0.1:8000/static/lens/'), 'http://127.0.0.1:8000/static/lens/audio/singapore.mp3');
+  assert.equal(S.trackUrl('audio/singapore.mp3', ''), 'audio/singapore.mp3');
+});

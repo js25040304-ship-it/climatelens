@@ -59,3 +59,13 @@ test('only the Singapore case card links to the Island Lab', () => {
   assert.match(html, /deepLink:\s*c\s*=>\s*c\.name==='Singapore'\s*\?\s*\{href:'singapore\/index\.html'/);
   assert.ok(read(join(LENS, 'ring.js')).includes('opts.deepLink'));
 });
+
+test('the Island Lab offers the Singapore track, muted by default', () => {
+  const html = read(join(LAB, 'index.html'));
+  const js = read(join(LAB, 'lab.js'));
+  assert.match(html, /<script src="\.\.\/soundscape\.js"><\/script>/, 'reuses the lens player and audio');
+  assert.match(html, /id="soundToggle"[^>]*aria-pressed="false"/);
+  assert.ok(!/<audio[^>]*autoplay/i.test(html));
+  assert.match(html + js, /music: Google Flow Music/, 'AI music credited');
+  assert.match(js, /\.scene\(\s*\w+\s*,\s*'Singapore'\s*\)/, 'always plays the Singapore track');
+});
