@@ -143,11 +143,12 @@ function mountDiscover(){
   DV_LST.dates.forEach((s,i)=>{const v=vals[i];if(v!=null)pts.push([doy(s)/365*320,105-(v-DV_LST.lo)/(DV_LST.hi-DV_LST.lo)*90,v,s])});
   labels.innerHTML=[['Jan',0],['Mar',59],['May',120],['Jul',181],['Sep',243],['Nov',304]].map(([m,dd])=>'<span style="left:'+(dd/365*100).toFixed(1)+'%">'+m+'</span>').join('');
   yax.textContent=DV_LST.lo+'–'+DV_LST.hi+' °C · same scale for all places';
-  if(!pts.length){gl.setAttribute('d','');gf.setAttribute('d','');dots.innerHTML='';sub.textContent='Cloud or no valid pixel on every 2024 date';return}
+  const miss=DV_LST.dates.filter((s,i)=>vals[i]==null).map(s=>'<circle class="dv-gmiss" cx="'+(doy(s)/365*320).toFixed(1)+'" cy="112" r="2.4"><title>'+dvDay(s)+': no clear pixel (cloud)</title></circle>').join('');
+  if(!pts.length){gl.setAttribute('d','');gf.setAttribute('d','');dots.innerHTML=miss;sub.textContent='Cloud or no valid pixel on every 2024 date';return}
   const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');gl.setAttribute('d',path);gf.setAttribute('d',pts.length>1?path+' L'+pts[pts.length-1][0].toFixed(1)+' 120 L'+pts[0][0].toFixed(1)+' 120 Z':'');
-  dots.innerHTML=pts.map(p=>'<circle class="dv-gdot" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.2"><title>'+dvDay(p[3])+': ≈ '+Math.round(p[2])+' °C</title></circle>').join('');
+  dots.innerHTML=pts.map(p=>'<circle class="dv-gdot" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.2"><title>'+dvDay(p[3])+': ≈ '+Math.round(p[2])+' °C</title></circle>').join('')+miss;
   const lastP=pts[pts.length-1],skipped=DV_LST.dates.length-pts.length;
-  sub.textContent='Latest clear reading ≈ '+Math.round(lastP[2])+' °C ('+dvDay(lastP[3])+') · '+pts.length+' of '+DV_LST.dates.length+' dates clear'+(skipped?', '+skipped+' cloudy':'');
+  sub.textContent='Latest clear reading ≈ '+Math.round(lastP[2])+' °C ('+dvDay(lastP[3])+') · '+pts.length+' of '+DV_LST.dates.length+' dates clear'+(skipped?', '+skipped+' cloudy (dashed markers)':'');
   $d('dv-graph-svg').setAttribute('aria-label','Daytime land surface temperature at '+d.name+' in 2024: '+pts.map(p=>dvDay(p[3])+' about '+Math.round(p[2])+' °C').join('; '))}
  function openPlace(i){clearTimeout(focusTimer);const d=DV_PLACES[i];stage.style.setProperty('--dv-zx',(5+d.x*.9)+'%');stage.style.setProperty('--dv-zy',(31+d.y*.46)+'%');stage.classList.add('dv-zooming');document.documentElement.style.overflow='hidden';renderPlace(i);
   focusTimer=setTimeout(()=>{focus.classList.add('open');focus.setAttribute('aria-hidden','false');$d('dv-back').focus({preventScroll:true})},reduced?0:460)}
