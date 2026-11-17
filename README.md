@@ -4,6 +4,8 @@ English · [简体中文](README.zh-CN.md)
 
 ClimateLens is an interactive climate-data investigation prototype for the 2026 NASA Space Apps challenge [Be An Earth System Trend Detective!](https://www.spaceappschallenge.org/2026/challenges/earth-system-trend-detective/). It guides students from a question and a prediction to a conclusion they can support with NASA data. The project is an independent team submission.
 
+**Live demo:** [Open ClimateLens](https://climatelens-theta.vercel.app/static/lens/index.html) · [Vercel site](https://climatelens-theta.vercel.app) · [Detailed project overview (中文)](docs/PROJECT_OVERVIEW.zh-CN.md)
+
 ## Explore the project
 
 | Experience | Local entry point | What you can do |

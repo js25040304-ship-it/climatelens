@@ -4,6 +4,8 @@
 
 ClimateLens 是为 2026 NASA Space Apps 赛题 [Be An Earth System Trend Detective!](https://www.spaceappschallenge.org/2026/challenges/earth-system-trend-detective/) 开发的互动气候数据探究原型。学生可以选择一座城市，提出问题、画出预测，再用 NASA 数据检验自己的判断，最后写出有证据支持的结论。
 
+**在线体验** · [进入 ClimateLens](https://climatelens-theta.vercel.app/static/lens/index.html) · [Vercel 站点](https://climatelens-theta.vercel.app) · [完整项目介绍](docs/PROJECT_OVERVIEW.zh-CN.md)
+
 ## 三种体验
 
 | 体验 | 本地入口 | 可以做什么 |
