@@ -79,6 +79,16 @@ Start with [Trend Detective](http://127.0.0.1:8000/static/lens/index.html). [Int
 | [`app/static/lens/`](app/static/lens/) | Island ring, guided cases, audio and Singapore Island Lab |
 | [`evidence/nasa-data/`](evidence/nasa-data/), [`scripts/`](scripts/), [`tests/`](tests/) | Archived NASA responses, reproducibility scripts and automated checks |
 
+## Team contributions
+
+| Member | Primary contributions |
+| --- | --- |
+| **1. Yingxin Hu** ([@js25040304-ship-it](https://github.com/js25040304-ship-it)) | Started the prototype and integrated the FastAPI routes and shared API contracts. Added scientific end-to-end checks, verified archive fallback, two-city comparisons, CSV provenance and comparison PDF export. [Integration](https://github.com/js25040304-ship-it/climatelens/pull/2) · [Scientific QA](https://github.com/js25040304-ship-it/climatelens/pull/6) · [Comparisons](https://github.com/js25040304-ship-it/climatelens/pull/10) · [Guidance and fallback](https://github.com/js25040304-ship-it/climatelens/pull/11) · [Units and CSV](https://github.com/js25040304-ship-it/climatelens/pull/13) |
+| **2. @weiyi-Grace** | Validated NASA POWER responses, units and missing-month handling, added data checks, and documented live coverage for all 25 city–indicator combinations with archived responses and results. [NASA data validation](https://github.com/js25040304-ship-it/climatelens/pull/4) |
+| **3. @it-is-not-used** | Added an independent numerical check of the Newey–West HAC standard error, p-value, confidence interval and per-decade slope. Tested constant series, checked the live Singapore statistics against the UI, and updated browser CI for the island carousel. [Statistical checks](https://github.com/js25040304-ship-it/climatelens/pull/3) · [Live-data integration](https://github.com/js25040304-ship-it/climatelens/pull/8) · [Browser CI](https://github.com/js25040304-ship-it/climatelens/pull/16) |
+| **4. @wj227-ctrl** | Built the cinematic standard investigation at the root page. Connected question entry, the interactive annual chart, evidence review and conclusions to the backend, and added an archived-data preview for offline sharing. [Standard investigation UI](https://github.com/js25040304-ship-it/climatelens/pull/5) |
+| **5. @wangyr2004-droid** | Improved AI-coaching fallback and bilingual PDF readability, and prepared the original demo script. Built the separate Trend Detective experience, the animated island ring, optional soundscape and Singapore Island Lab. [Coaching and PDF](https://github.com/js25040304-ship-it/climatelens/pull/1) · [Trend Detective](https://github.com/js25040304-ship-it/climatelens/pull/7) · [Soundscape](https://github.com/js25040304-ship-it/climatelens/pull/9) · [Island ring](https://github.com/js25040304-ship-it/climatelens/pull/12) · [Singapore Island Lab](https://github.com/js25040304-ship-it/climatelens/pull/14) |
+
 ## Verification
 
 ```sh
